@@ -1,0 +1,220 @@
+{% extends "layout.html" %}
+
+{% block title %}Settings{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pb-2 mb-3 border-bottom">
+    <h1 class="h2"><i class="fas fa-cog me-2"></i> Settings</h1>
+</div>
+
+<div class="row">
+    <!-- User Settings -->
+    <div class="col-md-6 mb-4">
+        <div class="card h-100">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">User Settings</h5>
+                {% if current_user.is_admin %}
+                <button type="button" class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#addUserModal">
+                    <i class="fas fa-user-plus me-1"></i> Add User
+                </button>
+                {% endif %}
+            </div>
+            <div class="card-body">
+                <ul class="list-group">
+                    {% for user in users %}
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        <div>
+                            <h5 class="mb-1">{{ user.username }}</h5>
+                            <p class="mb-1 text-muted">{{ user.email }}</p>
+                            <small class="text-muted">
+                                {% if user.is_admin %}
+                                <span class="badge bg-danger">Administrator</span>
+                                {% else %}
+                                <span class="badge bg-secondary">Standard User</span>
+                                {% endif %}
+                                
+                                {% if user.last_login %}
+                                <span>Last login: {{ user.last_login.strftime('%Y-%m-%d %H:%M') }}</span>
+                                {% endif %}
+                            </small>
+                        </div>
+                        <div class="d-flex">
+                            <button type="button" class="btn btn-sm btn-outline-primary me-1" data-bs-toggle="modal" data-bs-target="#changePasswordModal{{ user.id }}">
+                                <i class="fas fa-key"></i>
+                            </button>
+                            
+                            {% if current_user.is_admin and user.id != current_user.id %}
+                            <button type="button" class="btn btn-sm btn-outline-danger" onclick="confirmDeleteUser({{ user.id }}, '{{ user.username }}')">
+                                <i class="fas fa-trash-alt"></i>
+                            </button>
+                            {% endif %}
+                        </div>
+                    </li>
+                    
+                    <!-- Change Password Modal -->
+                    <div class="modal fade" id="changePasswordModal{{ user.id }}" tabindex="-1" aria-labelledby="changePasswordModalLabel{{ user.id }}" aria-hidden="true">
+                        <div class="modal-dialog">
+                            <div class="modal-content">
+                                <div class="modal-header">
+                                    <h5 class="modal-title" id="changePasswordModalLabel{{ user.id }}">Change Password: {{ user.username }}</h5>
+                                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                </div>
+                                <form action="{{ url_for('change_password') }}" method="post">
+                                    <div class="modal-body">
+                                        <input type="hidden" name="user_id" value="{{ user.id }}">
+                                        
+                                        {% if user.id == current_user.id %}
+                                        <div class="mb-3">
+                                            <label for="currentPassword{{ user.id }}" class="form-label">Current Password</label>
+                                            <input type="password" class="form-control" id="currentPassword{{ user.id }}" name="current_password" required>
+                                        </div>
+                                        {% endif %}
+                                        
+                                        <div class="mb-3">
+                                            <label for="newPassword{{ user.id }}" class="form-label">New Password</label>
+                                            <input type="password" class="form-control" id="newPassword{{ user.id }}" name="new_password" required>
+                                        </div>
+                                        
+                                        <div class="mb-3">
+                                            <label for="confirmPassword{{ user.id }}" class="form-label">Confirm New Password</label>
+                                            <input type="password" class="form-control" id="confirmPassword{{ user.id }}" name="confirm_password" required>
+                                        </div>
+                                    </div>
+                                    <div class="modal-footer">
+                                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                                        <button type="submit" class="btn btn-primary">Change Password</button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+    </div>
+    
+    <!-- System Information -->
+    <div class="col-md-6 mb-4">
+        <div class="card h-100">
+            <div class="card-header">
+                <h5 class="mb-0">System Information</h5>
+            </div>
+            <div class="card-body">
+                <div class="mb-4">
+                    <h6><i class="fas fa-info-circle me-2"></i> About GameNet Manager</h6>
+                    <p class="text-muted">A modern PXE-based game net management system with VHD support for Windows clients.</p>
+                    <p class="text-muted">Version: 1.0.0</p>
+                </div>
+                
+                <div class="mb-4">
+                    <h6><i class="fas fa-server me-2"></i> Server Status</h6>
+                    <div class="table-responsive">
+                        <table class="table table-sm">
+                            <tbody>
+                                <tr>
+                                    <th scope="row">PXE Server</th>
+                                    <td><span class="badge bg-success">Running</span></td>
+                                </tr>
+                                <tr>
+                                    <th scope="row">TFTP Service</th>
+                                    <td><span class="badge bg-success">Running</span></td>
+                                </tr>
+                                <tr>
+                                    <th scope="row">DHCP Service</th>
+                                    <td><span class="badge bg-success">Running</span></td>
+                                </tr>
+                                <tr>
+                                    <th scope="row">Cache Service</th>
+                                    <td><span class="badge bg-success">Running</span></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                
+                <div>
+                    <h6><i class="fas fa-database me-2"></i> Storage Usage</h6>
+                    <div class="progress mb-2">
+                        <div class="progress-bar bg-primary" role="progressbar" style="width: 65%;" aria-valuenow="65" aria-valuemin="0" aria-valuemax="100">65%</div>
+                    </div>
+                    <p class="text-muted small">325 GB used of 500 GB total</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Add User Modal (Admin only) -->
+{% if current_user.is_admin %}
+<div class="modal fade" id="addUserModal" tabindex="-1" aria-labelledby="addUserModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="addUserModalLabel">Add New User</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form action="{{ url_for('add_user') }}" method="post">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="username" class="form-label">Username</label>
+                        <input type="text" class="form-control" id="username" name="username" required>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="email" class="form-label">Email</label>
+                        <input type="email" class="form-control" id="email" name="email" required>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="password" class="form-label">Password</label>
+                        <input type="password" class="form-control" id="password" name="password" required>
+                    </div>
+                    
+                    <div class="mb-3 form-check">
+                        <input type="checkbox" class="form-check-input" id="isAdmin" name="is_admin">
+                        <label class="form-check-label" for="isAdmin">Administrator Access</label>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Add User</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // Confirm user deletion
+    function confirmDeleteUser(userId, username) {
+        if (confirm(`Are you sure you want to delete user "${username}"? This action cannot be undone.`)) {
+            // Create and submit a form to delete the user
+            const form = document.createElement('form');
+            form.method = 'POST';
+            form.action = `/settings/delete_user/${userId}`;
+            document.body.appendChild(form);
+            form.submit();
+        }
+    }
+    
+    // Password validation
+    document.querySelectorAll('form').forEach(form => {
+        form.addEventListener('submit', function(e) {
+            const newPassword = this.querySelector('input[name="new_password"]');
+            const confirmPassword = this.querySelector('input[name="confirm_password"]');
+            
+            if (newPassword && confirmPassword) {
+                if (newPassword.value !== confirmPassword.value) {
+                    e.preventDefault();
+                    alert('New passwords do not match');
+                }
+            }
+        });
+    });
+</script>
+{% endblock %}

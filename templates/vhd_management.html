@@ -1,0 +1,432 @@
+{% extends "layout.html" %}
+
+{% block title %}VHD Management{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pb-2 mb-3 border-bottom">
+    <h1 class="h2"><i class="fas fa-hdd me-2"></i> VHD Management</h1>
+    <div class="btn-toolbar mb-2 mb-md-0">
+        <div class="btn-group me-2">
+            <button type="button" class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#addVhdModal">
+                <i class="fas fa-plus me-1"></i> Create New VHD
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Search Bar -->
+<div class="row mb-4">
+    <div class="col-md-6 offset-md-6">
+        <div class="input-group">
+            <span class="input-group-text"><i class="fas fa-search"></i></span>
+            <input type="text" class="form-control" id="vhdSearch" placeholder="Search VHD images...">
+        </div>
+    </div>
+</div>
+
+<!-- VHD Images Table -->
+<div class="card mb-4">
+    <div class="card-header">
+        <h5 class="mb-0">VHD Images</h5>
+    </div>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover" id="vhdTable">
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>Description</th>
+                        <th>Windows Version</th>
+                        <th>Size</th>
+                        <th>Status</th>
+                        <th>Created</th>
+                        <th class="text-end">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% if vhds %}
+                        {% for vhd in vhds %}
+                        <tr>
+                            <td>{{ vhd.name }}</td>
+                            <td>{{ vhd.description or "" }}</td>
+                            <td>{{ vhd.windows_version or "Unknown" }}</td>
+                            <td>{{ vhd.size_gb }} GB</td>
+                            <td>
+                                {% if vhd.is_template %}
+                                <span class="badge bg-info">Template</span>
+                                {% endif %}
+                                {% if vhd.is_locked %}
+                                <span class="badge bg-danger">Locked</span>
+                                {% endif %}
+                                {% if vhd.is_super_mode %}
+                                <span class="badge bg-success">Super Mode</span>
+                                {% endif %}
+                            </td>
+                            <td>{{ vhd.created_at.strftime('%Y-%m-%d') }}</td>
+                            <td class="text-end">
+                                <div class="btn-group">
+                                    <button type="button" class="btn btn-sm btn-outline-primary btn-vhd-detail" 
+                                            data-vhd-id="{{ vhd.id }}"
+                                            data-vhd-name="{{ vhd.name }}"
+                                            data-vhd-desc="{{ vhd.description or '' }}"
+                                            data-vhd-size="{{ vhd.size_gb }}"
+                                            data-vhd-path="{{ vhd.file_path }}"
+                                            data-vhd-windows="{{ vhd.windows_version or 'Unknown' }}"
+                                            data-vhd-template="{{ vhd.is_template|lower }}"
+                                            data-vhd-locked="{{ vhd.is_locked|lower }}"
+                                            data-vhd-created="{{ vhd.created_at.isoformat() }}"
+                                            data-vhd-modified="{{ vhd.last_modified.isoformat() }}"
+                                            title="View Details">
+                                        <i class="fas fa-eye"></i>
+                                    </button>
+                                    
+                                    <button type="button" class="btn btn-sm btn-outline-secondary" 
+                                            data-bs-toggle="modal" data-bs-target="#editVhdModal{{ vhd.id }}" title="Edit VHD">
+                                        <i class="fas fa-edit"></i>
+                                    </button>
+                                    
+                                    <button type="button" class="btn btn-sm btn-outline-success" 
+                                            onclick="showCloneVhdModal({{ vhd.id }}, '{{ vhd.name }}')" title="Clone VHD">
+                                        <i class="fas fa-copy"></i>
+                                    </button>
+                                    
+                                    <!-- Super Mode Toggle Button -->
+                                    <button type="button" class="btn btn-sm {% if vhd.is_super_mode %}btn-success{% else %}btn-outline-warning{% endif %}" 
+                                            data-bs-toggle="modal" data-bs-target="#superModeModal{{ vhd.id }}" 
+                                            title="{% if vhd.is_super_mode %}Disable Super Mode{% else %}Enable Super Mode{% endif %}">
+                                        <i class="fas {% if vhd.is_super_mode %}fa-toggle-on{% else %}fa-toggle-off{% endif %}"></i>
+                                    </button>
+                                    
+                                    <!-- Restoration Points Button -->
+                                    <a href="{{ url_for('restoration_points', vhd_id=vhd.id) }}" class="btn btn-sm btn-outline-info" title="Restoration Points">
+                                        <i class="fas fa-history"></i>
+                                    </a>
+                                    
+                                    {% if not vhd.is_locked %}
+                                    <button type="button" class="btn btn-sm btn-outline-danger" 
+                                            onclick="confirmDeleteVhd({{ vhd.id }}, '{{ vhd.name }}')" title="Delete VHD">
+                                        <i class="fas fa-trash-alt"></i>
+                                    </button>
+                                    {% endif %}
+                                </div>
+                                
+                                <!-- Super Mode Modal -->
+                                <div class="modal fade" id="superModeModal{{ vhd.id }}" tabindex="-1" aria-labelledby="superModeModalLabel{{ vhd.id }}" aria-hidden="true">
+                                    <div class="modal-dialog">
+                                        <div class="modal-content">
+                                            <div class="modal-header">
+                                                <h5 class="modal-title" id="superModeModalLabel{{ vhd.id }}">
+                                                    {% if vhd.is_super_mode %}
+                                                    Disable Super Mode for {{ vhd.name }}
+                                                    {% else %}
+                                                    Enable Super Mode for {{ vhd.name }}
+                                                    {% endif %}
+                                                </h5>
+                                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                            </div>
+                                            <div class="modal-body">
+                                                {% if vhd.is_super_mode %}
+                                                <p>
+                                                    VHD <strong>{{ vhd.name }}</strong> is currently in Super Mode. 
+                                                    In this mode, changes made to the VHD are preserved when the client shuts down.
+                                                </p>
+                                                <p>
+                                                    When disabling Super Mode, you can choose to:
+                                                </p>
+                                                <form action="{{ url_for('toggle_super_mode', vhd_id=vhd.id) }}" method="post">
+                                                    <div class="form-check mb-3">
+                                                        <input class="form-check-input" type="checkbox" id="commitChanges{{ vhd.id }}" name="commit_changes" checked>
+                                                        <label class="form-check-label" for="commitChanges{{ vhd.id }}">
+                                                            Commit changes (save all changes made to the VHD)
+                                                        </label>
+                                                    </div>
+                                                    <div class="alert alert-warning">
+                                                        <i class="fas fa-exclamation-triangle me-2"></i>
+                                                        If you don't commit changes, all changes made since enabling Super Mode will be discarded.
+                                                    </div>
+                                                {% else %}
+                                                <p>
+                                                    Enabling Super Mode for VHD <strong>{{ vhd.name }}</strong> allows changes made on client computers 
+                                                    to be preserved when the client shuts down.
+                                                </p>
+                                                <p>
+                                                    In Super Mode, you can:
+                                                </p>
+                                                <ul>
+                                                    <li>Install software or make changes on clients that persist</li>
+                                                    <li>Create restoration points to save the current state</li>
+                                                    <li>Roll back to previous restoration points if needed</li>
+                                                </ul>
+                                                <form action="{{ url_for('toggle_super_mode', vhd_id=vhd.id) }}" method="post">
+                                                {% endif %}
+                                                
+                                                <div class="modal-footer">
+                                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                                                    <button type="submit" class="btn {% if vhd.is_super_mode %}btn-warning{% else %}btn-success{% endif %}">
+                                                        {% if vhd.is_super_mode %}
+                                                        Disable Super Mode
+                                                        {% else %}
+                                                        Enable Super Mode
+                                                        {% endif %}
+                                                    </button>
+                                                </div>
+                                                </form>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                {% if vhd.is_super_mode %}
+                                <!-- VHD Actions Dropdown for Super Mode Actions -->
+                                <div class="dropdown d-inline">
+                                    <button class="btn btn-sm btn-secondary dropdown-toggle" type="button" id="vhdActions{{ vhd.id }}" 
+                                            data-bs-toggle="dropdown" aria-expanded="false" title="Super Mode Actions">
+                                        <i class="fas fa-cog"></i>
+                                    </button>
+                                    <ul class="dropdown-menu" aria-labelledby="vhdActions{{ vhd.id }}">
+                                        <li>
+                                            <form action="{{ url_for('commit_vhd_changes', vhd_id=vhd.id) }}" method="post" class="px-2 py-1">
+                                                <button type="submit" class="btn btn-sm btn-success w-100">
+                                                    <i class="fas fa-save me-1"></i> Commit Changes
+                                                </button>
+                                            </form>
+                                        </li>
+                                        <li>
+                                            <form action="{{ url_for('discard_vhd_changes', vhd_id=vhd.id) }}" method="post" class="px-2 py-1"
+                                                  onsubmit="return confirm('Are you sure you want to discard all changes? This cannot be undone.')">
+                                                <button type="submit" class="btn btn-sm btn-danger w-100">
+                                                    <i class="fas fa-trash-alt me-1"></i> Discard Changes
+                                                </button>
+                                            </form>
+                                        </li>
+                                        <li><hr class="dropdown-divider"></li>
+                                        <li>
+                                            <button type="button" class="btn btn-sm btn-info w-100 mx-2" 
+                                                    data-bs-toggle="modal" data-bs-target="#createRestorePointModal{{ vhd.id }}">
+                                                <i class="fas fa-save me-1"></i> Create Restoration Point
+                                            </button>
+                                        </li>
+                                    </ul>
+                                </div>
+                                
+                                <!-- Create Restoration Point Modal -->
+                                <div class="modal fade" id="createRestorePointModal{{ vhd.id }}" tabindex="-1" 
+                                     aria-labelledby="createRestorePointModalLabel{{ vhd.id }}" aria-hidden="true">
+                                    <div class="modal-dialog">
+                                        <div class="modal-content">
+                                            <div class="modal-header">
+                                                <h5 class="modal-title" id="createRestorePointModalLabel{{ vhd.id }}">
+                                                    Create Restoration Point for {{ vhd.name }}
+                                                </h5>
+                                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                            </div>
+                                            <form action="{{ url_for('create_restoration_point', vhd_id=vhd.id) }}" method="post">
+                                                <div class="modal-body">
+                                                    <div class="mb-3">
+                                                        <label for="restorePointName{{ vhd.id }}" class="form-label">Name *</label>
+                                                        <input type="text" class="form-control" id="restorePointName{{ vhd.id }}" 
+                                                               name="name" required placeholder="e.g. Before Windows Update">
+                                                    </div>
+                                                    <div class="mb-3">
+                                                        <label for="restorePointDesc{{ vhd.id }}" class="form-label">Description</label>
+                                                        <textarea class="form-control" id="restorePointDesc{{ vhd.id }}" 
+                                                                  name="description" rows="2" 
+                                                                  placeholder="Why are you creating this restoration point?"></textarea>
+                                                    </div>
+                                                    <div class="alert alert-info">
+                                                        <i class="fas fa-info-circle me-2"></i>
+                                                        Creating a restoration point saves the current state of the VHD.
+                                                        You can restore to this point later if something goes wrong.
+                                                    </div>
+                                                </div>
+                                                <div class="modal-footer">
+                                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                                                    <button type="submit" class="btn btn-primary">Create Restoration Point</button>
+                                                </div>
+                                            </form>
+                                        </div>
+                                    </div>
+                                </div>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        
+                        <!-- Edit VHD Modal -->
+                        <div class="modal fade" id="editVhdModal{{ vhd.id }}" tabindex="-1" aria-labelledby="editVhdModalLabel{{ vhd.id }}" aria-hidden="true">
+                            <div class="modal-dialog">
+                                <div class="modal-content">
+                                    <div class="modal-header">
+                                        <h5 class="modal-title" id="editVhdModalLabel{{ vhd.id }}">Edit VHD: {{ vhd.name }}</h5>
+                                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                    </div>
+                                    <form class="edit-vhd-form" action="{{ url_for('edit_vhd', vhd_id=vhd.id) }}" method="post">
+                                        <div class="modal-body">
+                                            <div class="mb-3">
+                                                <label for="name{{ vhd.id }}" class="form-label">VHD Name</label>
+                                                <input type="text" class="form-control" id="name{{ vhd.id }}" name="name" value="{{ vhd.name }}" required>
+                                            </div>
+                                            <div class="mb-3">
+                                                <label for="description{{ vhd.id }}" class="form-label">Description</label>
+                                                <textarea class="form-control" id="description{{ vhd.id }}" name="description" rows="2">{{ vhd.description or '' }}</textarea>
+                                            </div>
+                                            <div class="mb-3">
+                                                <label for="windowsVersion{{ vhd.id }}" class="form-label">Windows Version</label>
+                                                <select class="form-select" id="windowsVersion{{ vhd.id }}" name="windows_version">
+                                                    <option value="" {% if not vhd.windows_version %}selected{% endif %}>Unknown</option>
+                                                    <option value="Windows 10" {% if vhd.windows_version == 'Windows 10' %}selected{% endif %}>Windows 10</option>
+                                                    <option value="Windows 11" {% if vhd.windows_version == 'Windows 11' %}selected{% endif %}>Windows 11</option>
+                                                    <option value="Windows Server 2019" {% if vhd.windows_version == 'Windows Server 2019' %}selected{% endif %}>Windows Server 2019</option>
+                                                    <option value="Windows Server 2022" {% if vhd.windows_version == 'Windows Server 2022' %}selected{% endif %}>Windows Server 2022</option>
+                                                </select>
+                                            </div>
+                                            <div class="mb-3 form-check">
+                                                <input type="checkbox" class="form-check-input" id="isTemplate{{ vhd.id }}" name="is_template" {% if vhd.is_template %}checked{% endif %}>
+                                                <label class="form-check-label" for="isTemplate{{ vhd.id }}">Template (Base image for cloning)</label>
+                                            </div>
+                                            <div class="mb-3 form-check">
+                                                <input type="checkbox" class="form-check-input" id="isLocked{{ vhd.id }}" name="is_locked" {% if vhd.is_locked %}checked{% endif %}>
+                                                <label class="form-check-label" for="isLocked{{ vhd.id }}">Lock VHD (Prevent deletion)</label>
+                                            </div>
+                                            <div class="mb-3">
+                                                <p class="text-muted mb-0">File Path: <code>{{ vhd.file_path }}</code></p>
+                                                <p class="text-muted mb-0">Size: {{ vhd.size_gb }} GB</p>
+                                                <p class="text-muted mb-0">Created: {{ vhd.created_at.strftime('%Y-%m-%d %H:%M:%S') }}</p>
+                                            </div>
+                                        </div>
+                                        <div class="modal-footer">
+                                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                                            <button type="submit" class="btn btn-primary">Save Changes</button>
+                                        </div>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <tr>
+                            <td colspan="7" class="text-center py-4">No VHD images found. Click "Create New VHD" to get started.</td>
+                        </tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Add VHD Modal -->
+<div class="modal fade" id="addVhdModal" tabindex="-1" aria-labelledby="addVhdModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="addVhdModalLabel">Create New VHD</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form id="newVhdForm" action="{{ url_for('add_vhd') }}" method="post">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="vhdName" class="form-label">VHD Name</label>
+                        <input type="text" class="form-control" id="vhdName" name="name" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="vhdDescription" class="form-label">Description</label>
+                        <textarea class="form-control" id="vhdDescription" name="description" rows="2"></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label for="vhdSize" class="form-label">Size (GB)</label>
+                        <input type="number" class="form-control" id="vhdSize" name="size_gb" value="50" min="10" max="500" step="5" required>
+                        <div class="form-text">Recommended: 50GB for Windows 10/11 base installation</div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="vhdWindowsVersion" class="form-label">Windows Version</label>
+                        <select class="form-select" id="vhdWindowsVersion" name="windows_version">
+                            <option value="">Unknown</option>
+                            <option value="Windows 10" selected>Windows 10</option>
+                            <option value="Windows 11">Windows 11</option>
+                            <option value="Windows Server 2019">Windows Server 2019</option>
+                            <option value="Windows Server 2022">Windows Server 2022</option>
+                        </select>
+                    </div>
+                    <div class="mb-3 form-check">
+                        <input type="checkbox" class="form-check-input" id="vhdIsTemplate" name="is_template">
+                        <label class="form-check-label" for="vhdIsTemplate">Template (Base image for cloning)</label>
+                    </div>
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle me-2"></i> After creating the VHD, you will need to install Windows on it. 
+                        Connect a client to this VHD and boot from a Windows installation media.
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Create VHD</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Clone VHD Modal -->
+<div class="modal fade" id="cloneVhdModal" tabindex="-1" aria-labelledby="cloneVhdModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="cloneVhdModalLabel">Clone VHD</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form action="{{ url_for('clone_vhd', vhd_id=0) }}" method="post" id="cloneVhdForm">
+                <div class="modal-body">
+                    <p>You are cloning: <strong id="cloneSourceName"></strong></p>
+                    <input type="hidden" id="cloneSourceId" name="vhd_id" value="">
+                    
+                    <div class="mb-3">
+                        <label for="newVhdName" class="form-label">New VHD Name</label>
+                        <input type="text" class="form-control" id="newVhdName" name="new_name" required>
+                    </div>
+                    
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle me-2"></i> Cloning creates an exact copy of the source VHD.
+                        This is useful for creating multiple client configurations from a base template.
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-success">Clone VHD</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- VHD Detail Modal -->
+<div class="modal fade" id="vhdDetailModal" tabindex="-1" aria-labelledby="vhdDetailModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="vhdDetailTitle">VHD Details</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body" id="vhdDetailContent">
+                <div class="text-center py-4">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                    <p class="mt-2">Loading VHD details...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/vhd.js') }}"></script>
+<script>
+// Fix for the clone form action URL
+document.getElementById('cloneVhdForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    const vhdId = document.getElementById('cloneSourceId').value;
+    this.action = "{{ url_for('clone_vhd', vhd_id=0) }}".replace('0', vhdId);
+    this.submit();
+});
+</script>
+{% endblock %}

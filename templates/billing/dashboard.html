@@ -1,0 +1,185 @@
+{% extends "layout.html" %}
+
+{% block title %}{{ translate('billing_dashboard') }}{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pb-2 mb-3 border-bottom">
+    <h1 class="h2"><i class="fas fa-cash-register me-2"></i> {{ translate('billing_dashboard') }}</h1>
+    <div class="btn-toolbar mb-2 mb-md-0">
+        <div class="btn-group me-2">
+            <a href="{{ url_for('manage_sessions') }}" class="btn btn-sm btn-outline-primary">
+                <i class="fas fa-clock me-1"></i> {{ translate('manage_sessions') }}
+            </a>
+            <a href="{{ url_for('manage_rates') }}" class="btn btn-sm btn-outline-secondary">
+                <i class="fas fa-tags me-1"></i> {{ translate('manage_rates') }}
+            </a>
+            <a href="{{ url_for('billing_settings') }}" class="btn btn-sm btn-outline-info">
+                <i class="fas fa-cog me-1"></i> {{ translate('settings') }}
+            </a>
+        </div>
+    </div>
+</div>
+
+<!-- Stats Cards -->
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="card bg-primary text-white">
+            <div class="card-body">
+                <h5 class="card-title">{{ translate('sessions_today') }}</h5>
+                <h2 class="mb-0">{{ sessions_today }}</h2>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-success text-white">
+            <div class="card-body">
+                <h5 class="card-title">{{ translate('revenue_today') }}</h5>
+                <h2 class="mb-0">{{ settings.currency_symbol }}{{ "%.2f"|format(revenue_today) }}</h2>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-info text-white">
+            <div class="card-body">
+                <h5 class="card-title">{{ translate('active_sessions') }}</h5>
+                <h2 class="mb-0">{{ active_sessions }}</h2>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-warning text-dark">
+            <div class="card-body">
+                <h5 class="card-title">{{ translate('unpaid_sessions') }}</h5>
+                <h2 class="mb-0">{{ unpaid_sessions }}</h2>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Recent Sessions -->
+<div class="card mb-4">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h5 class="mb-0">{{ translate('recent_sessions') }}</h5>
+        <a href="{{ url_for('manage_sessions') }}" class="btn btn-sm btn-primary">
+            {{ translate('view_all') }}
+        </a>
+    </div>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead>
+                    <tr>
+                        <th>{{ translate('client') }}</th>
+                        <th>{{ translate('user') }}</th>
+                        <th>{{ translate('start_time') }}</th>
+                        <th>{{ translate('duration') }}</th>
+                        <th>{{ translate('amount') }}</th>
+                        <th>{{ translate('status') }}</th>
+                        <th>{{ translate('actions') }}</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% if recent_sessions %}
+                        {% for session in recent_sessions %}
+                        <tr>
+                            <td>{{ session.client.name }}</td>
+                            <td>{{ session.user_name or '-' }}</td>
+                            <td>{{ session.start_time.strftime('%Y-%m-%d %H:%M') }}</td>
+                            <td>
+                                {% if session.duration_minutes %}
+                                    {{ session.duration_minutes }} {{ translate('minutes') }}
+                                {% elif session.is_active %}
+                                    <span class="badge bg-success">{{ translate('active') }}</span>
+                                {% else %}
+                                    -
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if session.billed_amount %}
+                                    {{ settings.currency_symbol }}{{ "%.2f"|format(session.billed_amount) }}
+                                {% else %}
+                                    -
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if session.is_active %}
+                                    <span class="badge bg-success">{{ translate('active') }}</span>
+                                {% else %}
+                                    {% if session.payment_status == 'Paid' %}
+                                        <span class="badge bg-success">{{ translate('paid') }}</span>
+                                    {% elif session.payment_status == 'Waived' %}
+                                        <span class="badge bg-info">{{ translate('waived') }}</span>
+                                    {% else %}
+                                        <span class="badge bg-warning">{{ translate('pending') }}</span>
+                                    {% endif %}
+                                {% endif %}
+                            </td>
+                            <td>
+                                <a href="{{ url_for('view_session', session_id=session.id) }}" class="btn btn-sm btn-outline-primary">
+                                    <i class="fas fa-eye"></i>
+                                </a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    {% else %}
+                        <tr>
+                            <td colspan="7" class="text-center py-4">{{ translate('no_sessions_found') }}</td>
+                        </tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Quick Actions -->
+<div class="row">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">{{ translate('quick_start_session') }}</h5>
+            </div>
+            <div class="card-body">
+                <form action="{{ url_for('start_session') }}" method="post">
+                    <div class="mb-3">
+                        <label for="clientSelect" class="form-label">{{ translate('select_client') }}</label>
+                        <select class="form-select" id="clientSelect" name="client_id" required>
+                            <option value="">{{ translate('select_client') }}...</option>
+                            {% for client in recent_sessions|map(attribute='client')|unique|list %}
+                            <option value="{{ client.id }}">{{ client.name }} ({{ client.ip_address or client.mac_address }})</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="userName" class="form-label">{{ translate('user_name') }}</label>
+                        <input type="text" class="form-control" id="userName" name="user_name" placeholder="{{ translate('optional') }}">
+                    </div>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-play me-1"></i> {{ translate('start_session') }}
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">{{ translate('reports') }}</h5>
+            </div>
+            <div class="card-body">
+                <div class="list-group">
+                    <a href="{{ url_for('manage_sessions', status='active') }}" class="list-group-item list-group-item-action">
+                        <i class="fas fa-clock me-2"></i> {{ translate('active_sessions_report') }}
+                    </a>
+                    <a href="{{ url_for('manage_sessions', status='pending') }}" class="list-group-item list-group-item-action">
+                        <i class="fas fa-exclamation-circle me-2"></i> {{ translate('unpaid_sessions_report') }}
+                    </a>
+                    <a href="{{ url_for('manage_sessions', date_from=now.strftime('%Y-%m-%d'), date_to=now.strftime('%Y-%m-%d')) }}" class="list-group-item list-group-item-action">
+                        <i class="fas fa-calendar-day me-2"></i> {{ translate('todays_sessions_report') }}
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

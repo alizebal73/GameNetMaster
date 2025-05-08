@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64">
+  <!-- GameNetMaster Icon -->
+  <circle cx="32" cy="32" r="30" fill="#3498db" />
+  
+  <!-- Network nodes -->
+  <circle cx="22" cy="22" r="4" fill="#ffffff" />
+  <circle cx="42" cy="22" r="4" fill="#ffffff" />
+  <circle cx="22" cy="42" r="4" fill="#ffffff" />
+  <circle cx="42" cy="42" r="4" fill="#ffffff" />
+  
+  <!-- Connecting lines -->
+  <line x1="22" y1="22" x2="42" y2="22" stroke="#ffffff" stroke-width="2" />
+  <line x1="22" y1="22" x2="22" y2="42" stroke="#ffffff" stroke-width="2" />
+  <line x1="22" y1="42" x2="42" y2="42" stroke="#ffffff" stroke-width="2" />
+  <line x1="42" y1="22" x2="42" y2="42" stroke="#ffffff" stroke-width="2" />
+  <line x1="22" y1="22" x2="42" y2="42" stroke="#ffffff" stroke-width="2" />
+  <line x1="22" y1="42" x2="42" y2="22" stroke="#ffffff" stroke-width="2" />
+  
+  <!-- Game controller icon in the center -->
+  <rect x="28" y="28" width="8" height="8" rx="2" fill="#ffffff" />
+  <circle cx="32" cy="32" r="2" fill="#3498db" />
+</svg>

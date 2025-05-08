@@ -1,0 +1,325 @@
+{% extends "layout.html" %}
+
+{% block title %}{{ translate('session_details') }}{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pb-2 mb-3 border-bottom">
+    <h1 class="h2"><i class="fas fa-clock me-2"></i> {{ translate('session_details') }}</h1>
+    <div class="btn-toolbar mb-2 mb-md-0">
+        <div class="btn-group me-2">
+            <a href="{{ url_for('manage_sessions') }}" class="btn btn-sm btn-outline-secondary">
+                <i class="fas fa-arrow-left me-1"></i> {{ translate('back_to_sessions') }}
+            </a>
+            <button type="button" class="btn btn-sm btn-outline-primary" onclick="window.print()">
+                <i class="fas fa-print me-1"></i> {{ translate('print') }}
+            </button>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Session Details Card -->
+    <div class="col-md-8">
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0">{{ translate('session_details') }}</h5>
+            </div>
+            <div class="card-body">
+                <div class="row mb-4">
+                    <div class="col-md-6">
+                        <h6>{{ translate('client_information') }}</h6>
+                        <p class="mb-1"><strong>{{ translate('client_name') }}:</strong> {{ session.client.name }}</p>
+                        <p class="mb-1"><strong>{{ translate('mac_address') }}:</strong> {{ session.client.mac_address }}</p>
+                        <p class="mb-1"><strong>{{ translate('ip_address') }}:</strong> {{ session.client.ip_address or translate('not_available') }}</p>
+                        {% if session.user_name %}
+                        <p class="mb-1"><strong>{{ translate('user_name') }}:</strong> {{ session.user_name }}</p>
+                        {% endif %}
+                    </div>
+                    <div class="col-md-6">
+                        <h6>{{ translate('session_status') }}</h6>
+                        <p class="mb-1">
+                            <strong>{{ translate('status') }}:</strong> 
+                            {% if session.is_active %}
+                                <span class="badge bg-success">{{ translate('active') }}</span>
+                            {% else %}
+                                <span class="badge bg-secondary">{{ translate('closed') }}</span>
+                            {% endif %}
+                        </p>
+                        <p class="mb-1">
+                            <strong>{{ translate('payment_status') }}:</strong> 
+                            {% if session.payment_status == 'Paid' %}
+                                <span class="badge bg-success">{{ translate('paid') }}</span>
+                            {% elif session.payment_status == 'Waived' %}
+                                <span class="badge bg-info">{{ translate('waived') }}</span>
+                            {% else %}
+                                <span class="badge bg-warning">{{ translate('pending') }}</span>
+                            {% endif %}
+                        </p>
+                    </div>
+                </div>
+                
+                <div class="row mb-4">
+                    <div class="col-md-6">
+                        <h6>{{ translate('timing_information') }}</h6>
+                        <p class="mb-1"><strong>{{ translate('start_time') }}:</strong> {{ session.start_time.strftime('%Y-%m-%d %H:%M:%S') }}</p>
+                        {% if session.end_time %}
+                        <p class="mb-1"><strong>{{ translate('end_time') }}:</strong> {{ session.end_time.strftime('%Y-%m-%d %H:%M:%S') }}</p>
+                        <p class="mb-1"><strong>{{ translate('duration') }}:</strong> {{ session.duration_minutes }} {{ translate('minutes') }}</p>
+                        {% else %}
+                        <p class="mb-1"><strong>{{ translate('current_duration') }}:</strong> 
+                            <span id="currentDuration">{{ ((now - session.start_time).total_seconds() / 60)|int }} {{ translate('minutes') }}</span>
+                        </p>
+                        {% endif %}
+                    </div>
+                    <div class="col-md-6">
+                        <h6>{{ translate('billing_information') }}</h6>
+                        {% if session.rate %}
+                        <p class="mb-1"><strong>{{ translate('rate') }}:</strong> {{ session.rate.name }}</p>
+                        <p class="mb-1"><strong>{{ translate('hourly_rate') }}:</strong> {{ settings.currency_symbol }}{{ "%.2f"|format(session.rate.hourly_rate) }}/{{ translate('hour') }}</p>
+                        <p class="mb-1"><strong>{{ translate('minimum_time') }}:</strong> {{ session.rate.minimum_minutes }} {{ translate('minutes') }}</p>
+                        {% else %}
+                        <p class="mb-1">{{ translate('no_rate_specified') }}</p>
+                        {% endif %}
+                        
+                        {% if session.billed_amount %}
+                        <p class="mb-1"><strong>{{ translate('billed_amount') }}:</strong> {{ settings.currency_symbol }}{{ "%.2f"|format(session.billed_amount) }}</p>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                {% if session.notes %}
+                <div class="row mb-4">
+                    <div class="col-12">
+                        <h6>{{ translate('notes') }}</h6>
+                        <p>{{ session.notes }}</p>
+                    </div>
+                </div>
+                {% endif %}
+                
+                <!-- Actions -->
+                <div class="row">
+                    <div class="col-12">
+                        <h6>{{ translate('actions') }}</h6>
+                        <div class="btn-group">
+                            {% if session.is_active %}
+                            <form action="{{ url_for('end_session', session_id=session.id) }}" method="post" class="me-2">
+                                <button type="submit" class="btn btn-warning" onclick="return confirm('{{ translate('confirm_end_session') }}')">
+                                    <i class="fas fa-stop me-1"></i> {{ translate('end_session') }}
+                                </button>
+                            </form>
+                            {% endif %}
+                            
+                            {% if not session.is_active and session.payment_status == 'Pending' %}
+                            <button type="button" class="btn btn-success me-2" data-bs-toggle="modal" data-bs-target="#paymentModal">
+                                <i class="fas fa-money-bill-wave me-1"></i> {{ translate('record_payment') }}
+                            </button>
+                            
+                            <button type="button" class="btn btn-secondary" data-bs-toggle="modal" data-bs-target="#waivePaymentModal">
+                                <i class="fas fa-times me-1"></i> {{ translate('waive_payment') }}
+                            </button>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Payment History Card -->
+    <div class="col-md-4">
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0">{{ translate('payment_history') }}</h5>
+            </div>
+            <div class="card-body">
+                {% if session.payments %}
+                <div class="list-group">
+                    {% for payment in session.payments %}
+                    <div class="list-group-item">
+                        <div class="d-flex w-100 justify-content-between">
+                            <h6 class="mb-1">{{ settings.currency_symbol }}{{ "%.2f"|format(payment.amount) }}</h6>
+                            <small>{{ payment.payment_time.strftime('%Y-%m-%d %H:%M') }}</small>
+                        </div>
+                        <p class="mb-1">{{ translate('payment_method') }}: {{ payment.payment_method }}</p>
+                        <p class="mb-1">{{ translate('receipt') }}: {{ payment.receipt_number }}</p>
+                        {% if payment.notes %}
+                        <small>{{ payment.notes }}</small>
+                        {% endif %}
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="alert alert-info">
+                    {{ translate('no_payments_recorded') }}
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        
+        <!-- Receipt Card -->
+        {% if session.payment_status == 'Paid' %}
+        <div class="card mb-4 print-only">
+            <div class="card-header">
+                <h5 class="mb-0">{{ translate('receipt') }}</h5>
+            </div>
+            <div class="card-body">
+                <div class="text-center mb-3">
+                    <h4>{{ settings.receipt_header or 'Game Center Receipt' }}</h4>
+                </div>
+                
+                <div class="mb-3">
+                    <p class="mb-1"><strong>{{ translate('receipt_number') }}:</strong> {{ session.payments[0].receipt_number }}</p>
+                    <p class="mb-1"><strong>{{ translate('date') }}:</strong> {{ session.payments[0].payment_time.strftime('%Y-%m-%d') }}</p>
+                    <p class="mb-1"><strong>{{ translate('time') }}:</strong> {{ session.payments[0].payment_time.strftime('%H:%M') }}</p>
+                </div>
+                
+                <div class="mb-3">
+                    <table class="table table-sm">
+                        <tr>
+                            <td><strong>{{ translate('service') }}</strong></td>
+                            <td class="text-end"><strong>{{ translate('amount') }}</strong></td>
+                        </tr>
+                        <tr>
+                            <td>{{ translate('computer_usage') }} ({{ session.duration_minutes }} {{ translate('minutes') }})</td>
+                            <td class="text-end">{{ settings.currency_symbol }}{{ "%.2f"|format(session.billed_amount) }}</td>
+                        </tr>
+                        <tr>
+                            <td><strong>{{ translate('total') }}</strong></td>
+                            <td class="text-end"><strong>{{ settings.currency_symbol }}{{ "%.2f"|format(session.billed_amount) }}</strong></td>
+                        </tr>
+                    </table>
+                </div>
+                
+                <div class="text-center">
+                    <p class="mb-1">{{ translate('payment_method') }}: {{ session.payments[0].payment_method }}</p>
+                    {% if settings.receipt_footer %}
+                    <p class="mt-3">{{ settings.receipt_footer }}</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Payment Modal -->
+<div class="modal fade" id="paymentModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">{{ translate('record_payment') }}</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form action="{{ url_for('create_payment', session_id=session.id) }}" method="post">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="paymentAmount" class="form-label">{{ translate('amount') }} *</label>
+                        <div class="input-group">
+                            <span class="input-group-text">{{ settings.currency_symbol }}</span>
+                            <input type="number" class="form-control" id="paymentAmount" name="amount" 
+                                   value="{{ session.billed_amount }}" min="0.01" step="0.01" required>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="paymentMethod" class="form-label">{{ translate('payment_method') }} *</label>
+                        <select class="form-select" id="paymentMethod" name="payment_method" required>
+                            {% for method in payment_methods %}
+                            <option value="{{ method.strip() }}">{{ method.strip() }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="paymentNotes" class="form-label">{{ translate('notes') }}</label>
+                        <textarea class="form-control" id="paymentNotes" name="notes" rows="2"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{{ translate('cancel') }}</button>
+                    <button type="submit" class="btn btn-success">{{ translate('record_payment') }}</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Waive Payment Modal -->
+<div class="modal fade" id="waivePaymentModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">{{ translate('waive_payment') }}</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form action="{{ url_for('waive_payment', session_id=session.id) }}" method="post">
+                <div class="modal-body">
+                    <p>{{ translate('waive_payment_explanation') }}</p>
+                    <div class="mb-3">
+                        <label for="waiveReason" class="form-label">{{ translate('reason') }} *</label>
+                        <textarea class="form-control" id="waiveReason" name="reason" rows="2" required></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{{ translate('cancel') }}</button>
+                    <button type="submit" class="btn btn-warning">{{ translate('waive_payment') }}</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+{% if session.is_active %}
+<script>
+    // Update current duration every minute
+    setInterval(function() {
+        var startTime = new Date('{{ session.start_time.isoformat() }}');
+        var currentTime = new Date();
+        var diffInMinutes = Math.floor((currentTime - startTime) / (1000 * 60));
+        document.getElementById('currentDuration').innerText = diffInMinutes + ' {{ translate('minutes') }}';
+    }, 60000); // Update every minute
+</script>
+{% endif %}
+{% endblock %}
+
+{% block styles %}
+<style>
+@media print {
+    .btn-toolbar, .btn-group, .modal, .navbar, .no-print {
+        display: none !important;
+    }
+    
+    .card {
+        border: none !important;
+    }
+    
+    .card-header {
+        background-color: white !important;
+        border-bottom: 1px solid black !important;
+    }
+    
+    body {
+        margin: 0;
+        padding: 0;
+        font-size: 12pt;
+    }
+    
+    .container {
+        width: 100%;
+        max-width: 100%;
+        padding: 0;
+        margin: 0;
+    }
+    
+    .print-only {
+        display: block !important;
+    }
+}
+
+@media screen {
+    .print-only {
+        display: none;
+    }
+}
+</style>
+{% endblock %}

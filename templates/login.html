@@ -1,0 +1,73 @@
+{% extends "layout.html" %}
+
+{% block title %}{{ t('login') }}{% endblock %}
+
+{% block auth_content %}
+<div class="login-container">
+    <div class="login-form bg-dark">
+        <div class="text-center mb-4">
+            <h2><i class="fas fa-gamepad me-2"></i> {{ t('app_name') }}</h2>
+            <p class="text-muted">{{ t('sign_in') }}</p>
+        </div>
+        
+        <!-- Language Switcher for Login Page -->
+        <div class="language-switcher-login text-center mb-4">
+            <a href="{{ url_for('change_language', lang='en', next=request.full_path) }}" 
+               class="btn btn-sm {% if get_user_language() == 'en' %}btn-secondary{% else %}btn-outline-secondary{% endif %} me-2">English</a>
+            <a href="{{ url_for('change_language', lang='fa', next=request.full_path) }}" 
+               class="btn btn-sm {% if get_user_language() == 'fa' %}btn-secondary{% else %}btn-outline-secondary{% endif %}">فارسی</a>
+        </div>
+        
+        <form method="post" action="{{ url_for('login') }}">
+            <div class="mb-3">
+                <label for="username" class="form-label">{{ t('username') }}</label>
+                <div class="input-group">
+                    <span class="input-group-text"><i class="fas fa-user"></i></span>
+                    <input type="text" class="form-control" id="username" name="username" required autofocus>
+                </div>
+            </div>
+            
+            <div class="mb-4">
+                <label for="password" class="form-label">{{ t('password') }}</label>
+                <div class="input-group">
+                    <span class="input-group-text"><i class="fas fa-lock"></i></span>
+                    <input type="password" class="form-control" id="password" name="password" required>
+                </div>
+            </div>
+            
+            <div class="d-grid">
+                <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-sign-in-alt me-2"></i> {{ t('sign_in_button') }}
+                </button>
+            </div>
+        </form>
+        
+        <div class="mt-4 text-center">
+            <p class="text-muted small">
+                <i class="fas fa-info-circle me-1"></i> {{ t('default_credentials') }}
+            </p>
+        </div>
+    </div>
+</div>
+
+<style>
+.login-container {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+}
+.login-form {
+    width: 100%;
+    max-width: 420px;
+    padding: 25px;
+    border-radius: 8px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+}
+.language-switcher-login {
+    display: flex;
+    justify-content: center;
+}
+</style>
+{% endblock %}

@@ -1,0 +1,60 @@
+I want you to build a complete, professional-grade internet café / game center management system called **GameNetMaster**. This system must support full Persian (Farsi) language, including right-to-left (RTL) layout in the UI and full Persian text rendering. It must also fully support clients running **Windows 10, Windows 11, and future versions of Windows** using VHD boot.
+
+──────────────────────────────
+🧠 System Architecture Overview:
+──────────────────────────────
+- Server software running on Windows Server 2022.
+- Diskless boot system using PXE + VHD (like CCBoot).
+- Web-based control panel for admin tasks.
+- Lightweight agent on each client for monitoring and remote control.
+- Everything should support Persian (Farsi) language with proper RTL layout.
+
+──────────────────────────────
+🔧 Functional Features:
+──────────────────────────────
+✅ **Diskless VHD Boot** via PXE  
+✅ **Cloneable, editable VHD images** for each game OS  
+✅ **VHD-level caching system** to reduce read times (SuperCache-style)  
+✅ **Client agent**: auto login, script runner, bandwidth monitor  
+✅ **Web-based Admin Panel** (React/Flask) fully translated into Persian  
+✅ **Bandwidth monitoring per client**  
+✅ **Assign games/apps per user/client**  
+✅ **Full session tracking and logs**  
+✅ **User-level access permissions for admins**  
+✅ **Multi-language support with full RTL compatibility for Persian**  
+✅ **Automatic launch of Steam, Battle.net, Epic after boot**  
+✅ **Centralized Windows/software updates to VHD base image**  
+✅ **Secure communication (HTTPS or tokens)**  
+✅ **Compatible with Windows 10, 11, and future Windows versions**
+
+──────────────────────────────
+🛠 Suggested Tech Stack:
+──────────────────────────────
+- Backend: Python (FastAPI or Flask)
+- Frontend: ReactJS with i18n (Persian + English, RTL support)
+- Client Agent: Python or Rust/C++
+- DB: SQLite for dev / PostgreSQL for production
+- Boot: PXE/iPXE + VHD (Win10/11)
+- Hosting: Windows Server 2022
+
+──────────────────────────────
+📦 Deliverables:
+──────────────────────────────
+1. Project folder structure with clear module separation  
+2. PXE/VHD boot manager  
+3. Persian web dashboard with full admin tools  
+4. Client agent that syncs with server  
+5. Game & bandwidth management tools  
+6. User access and time management  
+7. Documentation (in English and Persian)
+
+Start by scaffolding the project, and implement modules in this order:
+1. PXE + VHD boot system  
+2. Server control + VHD manager  
+3. Client agent  
+4. Web-based admin panel (with Persian translation)  
+5. Logs, security, caching, and updates
+
+Use clean code, modular design, and be sure to support Persian text and UI layout in all components.
+
+👉 If you believe any additional feature or optimization would improve the system, feel free to add it proactively. Your goal is to make this as robust, modern, and complete as possible for a professional game center environment.

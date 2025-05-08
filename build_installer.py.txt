@@ -1,0 +1,255 @@
+"""
+Build script for GameNetMaster Windows installer
+
+This script:
+1. Installs required development dependencies
+2. Builds a standalone executable using PyInstaller
+3. Creates a Windows installer using Inno Setup
+
+Requirements:
+- Python 3.6+
+- PyInstaller
+- Inno Setup (must be installed on Windows)
+"""
+
+import os
+import sys
+import subprocess
+import shutil
+import platform
+from pathlib import Path
+
+# Configuration
+APP_NAME = "GameNetMaster"
+APP_VERSION = "1.0.0"  # Update this with your actual version
+MAIN_PY_FILE = "main.py"  # Update this with your actual entry point
+ICON_PATH = "icon.svg"  # SVG icon for the application
+
+# Additional files to include in the installer
+ADDITIONAL_FILES = [
+    "translations.py",  # If you have translation files
+    "generated-icon.png"  # Include the app icon
+]
+
+# Dependencies to include
+DEPENDENCIES = [
+    "flask",  # Web framework
+    "sqlalchemy",  # Database ORM
+    "flask-login",  # User authentication
+    # Add other dependencies your application needs
+]
+
+
+def is_windows():
+    """Check if we're running on Windows"""
+    return platform.system() == "Windows"
+
+
+def print_info_message():
+    """Print information about building the installer"""
+    print("=" * 80)
+    print(f"GameNetMaster Installer Builder")
+    print("=" * 80)
+    print("This script helps you build a Windows installer for GameNetMaster.")
+    
+    if not is_windows():
+        print("\nNOTE: You are not running on Windows.")
+        print("To create the final installer, you'll need to run this script on Windows with Inno Setup installed.")
+        print("This script will generate the PyInstaller spec file that you can use on Windows.")
+        print("\nSteps for creating the installer on Windows:")
+        print("1. Install Python 3.6+ on your Windows machine")
+        print("2. Install Inno Setup 6 from https://jrsoftware.org/isdl.php")
+        print("3. Copy your GameNetMaster project files to Windows")
+        print("4. Install the required dependencies: pip install -r requirements-dev.txt")
+        print("5. Run this script: python build_installer.py")
+    
+    print("\nBuilding process is starting...\n")
+
+
+def install_dev_requirements():
+    """Install development requirements for building the package"""
+    print("Installing development requirements...")
+    try:
+        subprocess.check_call([sys.executable, "-m", "pip", "install", "-r", "requirements-dev.txt"])
+        
+        # Also install core dependencies
+        for dep in DEPENDENCIES:
+            subprocess.check_call([sys.executable, "-m", "pip", "install", dep])
+            
+        print("✓ All requirements have been installed successfully.")
+    except subprocess.CalledProcessError as e:
+        print(f"Error installing requirements: {e}")
+        return False
+    return True
+
+
+def generate_pyinstaller_spec():
+    """Generate a PyInstaller spec file"""
+    print("Generating PyInstaller spec file...")
+    
+    # Create a basic spec file
+    spec_content = f"""# -*- mode: python ; coding: utf-8 -*-
+
+block_cipher = None
+
+a = Analysis(
+    ['{MAIN_PY_FILE}'],
+    pathex=[],
+    binaries=[],
+    datas=[],
+    hiddenimports=[],
+    hookspath=[],
+    hooksconfig={{}},
+    runtime_hooks=[],
+    excludes=[],
+    win_no_prefer_redirects=False,
+    win_private_assemblies=False,
+    cipher=block_cipher,
+    noarchive=False,
+)
+
+# Add additional files
+"""
+    
+    # Add code for additional files
+    for file in ADDITIONAL_FILES:
+        spec_content += f"a.datas += [('{file}', '{file}', 'DATA')]\n"
+    
+    spec_content += """
+pyz = PYZ(a.pure, a.zipped_data, cipher=block_cipher)
+
+exe = EXE(
+    pyz,
+    a.scripts,
+    a.binaries,
+    a.zipfiles,
+    a.datas,
+    [],
+    name='""" + APP_NAME + """',
+    debug=False,
+    bootloader_ignore_signals=False,
+    strip=False,
+    upx=True,
+    upx_exclude=[],
+    runtime_tmpdir=None,
+    console=False,
+    disable_windowed_traceback=False,
+    argv_emulation=False,
+    target_arch=None,
+    codesign_identity=None,
+    entitlements_file=None,
+    icon='""" + ICON_PATH + """',
+)
+"""
+    
+    # Write the spec file
+    with open(f"{APP_NAME}.spec", "w") as f:
+        f.write(spec_content)
+    
+    print(f"✓ PyInstaller spec file generated: {APP_NAME}.spec")
+    return True
+
+
+def run_pyinstaller():
+    """Build the executable with PyInstaller"""
+    print("Building executable with PyInstaller...")
+    
+    # Make sure the dist and build directories are clean
+    for dir_name in ["dist", "build"]:
+        if os.path.exists(dir_name):
+            shutil.rmtree(dir_name)
+    
+    try:
+        # Use PyInstaller to create the executable
+        if os.path.exists(f"{APP_NAME}.spec"):
+            # Use the spec file if it exists
+            subprocess.check_call(["pyinstaller", f"{APP_NAME}.spec"])
+        else:
+            # Otherwise create it on the fly
+            subprocess.check_call([
+                "pyinstaller",
+                "--onefile",
+                "--windowed",
+                f"--icon={ICON_PATH}",
+                f"--name={APP_NAME}",
+                MAIN_PY_FILE
+            ])
+        
+        print(f"✓ Executable built successfully at dist/{APP_NAME}.exe")
+        return True
+    except subprocess.CalledProcessError as e:
+        print(f"Error building executable: {e}")
+        return False
+
+
+def run_inno_setup():
+    """Create the Windows installer using Inno Setup"""
+    if not is_windows():
+        print("Skipping Inno Setup step since you're not on Windows.")
+        print("To build the final installer, please run this script on Windows.")
+        return False
+    
+    print("Building installer with Inno Setup...")
+    
+    # Path to the Inno Setup compiler
+    inno_setup_compiler = r"C:\Program Files (x86)\Inno Setup 6\ISCC.exe"
+    
+    # Check if Inno Setup is installed
+    if not os.path.exists(inno_setup_compiler):
+        inno_setup_compiler = r"C:\Program Files\Inno Setup 6\ISCC.exe"
+        if not os.path.exists(inno_setup_compiler):
+            print("Inno Setup not found. Please install Inno Setup 6 from https://jrsoftware.org/isdl.php")
+            return False
+    
+    try:
+        # Run the Inno Setup compiler
+        subprocess.check_call([inno_setup_compiler, "inno_setup_script.iss"])
+        print("✓ Installer built successfully!")
+        
+        # Check if the Output directory exists
+        output_dir = Path("Output")
+        if output_dir.exists():
+            installer_files = list(output_dir.glob("*.exe"))
+            if installer_files:
+                print(f"✓ Your installer can be found at: {installer_files[0]}")
+        
+        return True
+    except subprocess.CalledProcessError as e:
+        print(f"Error building installer: {e}")
+        return False
+
+
+def main():
+    """Main build process"""
+    print_info_message()
+    
+    # Always install dependencies and generate spec
+    if not install_dev_requirements():
+        print("Failed to install requirements. Please check your internet connection and try again.")
+        return
+    
+    # Generate PyInstaller spec file
+    generate_pyinstaller_spec()
+    
+    # Only run PyInstaller and Inno Setup on Windows
+    if is_windows():
+        if not run_pyinstaller():
+            print("Failed to build executable. Please check the errors above.")
+            return
+        
+        if not run_inno_setup():
+            print("Failed to build installer. Please check the errors above.")
+            return
+            
+        print("\n✓ Build process completed successfully!")
+        print("Your installer can be found in the 'Output' folder.")
+    else:
+        print("\nTo complete the process on Windows:")
+        print("1. Copy all these files to a Windows machine")
+        print("2. Install Python 3.6+ and Inno Setup 6")
+        print("3. Run 'pip install -r requirements-dev.txt'")
+        print("4. Run this script again: 'python build_installer.py'")
+
+
+if __name__ == "__main__":
+    main()
