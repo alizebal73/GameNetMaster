@@ -1,0 +1,122 @@
+{% extends "layout.html" %}
+
+{% block title %}{{ translate('restoration_points_for') }} {{ vhd.name }}{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row mb-4">
+        <div class="col">
+            <h1>{{ translate('restoration_points_for') }} {{ vhd.name }}</h1>
+            <p class="text-muted">{{ translate('manage_restoration_points_desc') }}</p>
+        </div>
+    </div>
+    
+    <div class="row mb-4">
+        <div class="col">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">{{ translate('vhd_details') }}</h3>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <p><strong>{{ translate('name') }}:</strong> {{ vhd.name }}</p>
+                            <p><strong>{{ translate('description') }}:</strong> {{ vhd.description }}</p>
+                            <p><strong>{{ translate('windows_version') }}:</strong> {{ vhd.windows_version }}</p>
+                        </div>
+                        <div class="col-md-6">
+                            <p><strong>{{ translate('size') }}:</strong> {{ vhd.size_gb }} GB</p>
+                            <p><strong>{{ translate('super_mode') }}:</strong> {{ translate('yes') if vhd.is_super_mode else translate('no') }}</p>
+                            <p><strong>{{ translate('last_modified') }}:</strong> {{ vhd.last_modified.strftime('%Y-%m-%d %H:%M') }}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Create new restoration point -->
+    <div class="row mb-4">
+        <div class="col">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">{{ translate('create_new_restoration_point') }}</h3>
+                </div>
+                <div class="card-body">
+                    <form action="{{ url_for('create_restoration_point', vhd_id=vhd.id) }}" method="post">
+                        <div class="mb-3">
+                            <label for="name" class="form-label">{{ translate('name') }} *</label>
+                            <input type="text" class="form-control" id="name" name="name" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="description" class="form-label">{{ translate('description') }}</label>
+                            <textarea class="form-control" id="description" name="description" rows="3"></textarea>
+                        </div>
+                        <button type="submit" class="btn btn-primary">{{ translate('create_restoration_point') }}</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Restoration points list -->
+    <div class="row">
+        <div class="col">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">{{ translate('existing_restoration_points') }}</h3>
+                </div>
+                <div class="card-body">
+                    {% if points %}
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>{{ translate('name') }}</th>
+                                        <th>{{ translate('description') }}</th>
+                                        <th>{{ translate('created_at') }}</th>
+                                        <th>{{ translate('created_by') }}</th>
+                                        <th>{{ translate('actions') }}</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for point in points %}
+                                    <tr>
+                                        <td>{{ point.name }}</td>
+                                        <td>{{ point.description }}</td>
+                                        <td>{{ point.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
+                                        <td>{{ point.created_by.username }}</td>
+                                        <td>
+                                            <div class="d-flex">
+                                                <form action="{{ url_for('restore_from_point', point_id=point.id) }}" method="post" class="me-2">
+                                                    <button type="submit" class="btn btn-sm btn-warning" onclick="return confirm('{{ translate('confirm_restore_point') }}')">
+                                                        {{ translate('restore') }}
+                                                    </button>
+                                                </form>
+                                                <form action="{{ url_for('delete_restoration_point', point_id=point.id) }}" method="post">
+                                                    <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('{{ translate('confirm_delete_point') }}')">
+                                                        {{ translate('delete') }}
+                                                    </button>
+                                                </form>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <div class="alert alert-info">
+                            {{ translate('no_restoration_points') }}
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="mt-4">
+        <a href="{{ url_for('vhd_management') }}" class="btn btn-secondary">{{ translate('back_to_vhd_management') }}</a>
+    </div>
+</div>
+{% endblock %}

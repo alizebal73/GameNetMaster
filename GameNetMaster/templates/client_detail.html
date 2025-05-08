@@ -1,0 +1,399 @@
+{% extends "layout.html" %}
+
+{% block title %}{{ client.name }} - Client Details{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row mb-4">
+        <div class="col">
+            <h1>
+                <a href="{{ url_for('clients') }}" class="text-decoration-none">
+                    <i class="bi bi-arrow-left me-2"></i>
+                </a>
+                {{ client.name }}
+                {% if client.is_online %}
+                    <span class="badge bg-success">Online</span>
+                {% else %}
+                    <span class="badge bg-secondary">Offline</span>
+                {% endif %}
+            </h1>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-6">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">{{ t('client_info') }}</h5>
+                </div>
+                <div class="card-body">
+                    <table class="table">
+                        <tr>
+                            <th>{{ t('mac_address') }}</th>
+                            <td>{{ client.mac_address }}</td>
+                        </tr>
+                        <tr>
+                            <th>{{ t('ip_address') }}</th>
+                            <td>{{ client.ip_address or t('unknown') }}</td>
+                        </tr>
+                        <tr>
+                            <th>{{ t('vhd_image') }}</th>
+                            <td>{{ client.vhd.name if client.vhd else t('none') }}</td>
+                        </tr>
+                        <tr>
+                            <th>{{ t('boot_mode') }}</th>
+                            <td>{{ client.boot_mode }}</td>
+                        </tr>
+                        <tr>
+                            <th>{{ t('persistent') }}</th>
+                            <td>
+                                {% if client.is_persistent %}
+                                    <span class="badge bg-success">{{ t('yes') }}</span>
+                                {% else %}
+                                    <span class="badge bg-secondary">{{ t('no') }}</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        <tr>
+                            <th>{{ t('last_boot') }}</th>
+                            <td>{{ client.last_boot.strftime('%Y-%m-%d %H:%M') if client.last_boot else t('never') }}</td>
+                        </tr>
+                        <tr>
+                            <th>{{ t('last_shutdown') }}</th>
+                            <td>{{ client.last_shutdown.strftime('%Y-%m-%d %H:%M') if client.last_shutdown else t('never') }}</td>
+                        </tr>
+                        <tr>
+                            <th>{{ t('last_seen') }}</th>
+                            <td>{{ client.last_seen.strftime('%Y-%m-%d %H:%M') if client.last_seen else t('never') }}</td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+
+            <div class="card mb-4">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">{{ t('client_actions') }}</h5>
+                </div>
+                <div class="card-body">
+                    <div class="d-flex flex-wrap gap-2">
+                        <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#editClientModal">
+                            <i class="bi bi-pencil me-1"></i> {{ t('edit') }}
+                        </button>
+                        
+                        {% if client.is_online %}
+                        <form action="{{ url_for('reboot_client', client_id=client.id) }}" method="post" class="d-inline">
+                            <button type="submit" class="btn btn-warning">
+                                <i class="bi bi-arrow-clockwise me-1"></i> {{ t('reboot') }}
+                            </button>
+                        </form>
+                        
+                        <button class="btn btn-info" id="viewScreenButton">
+                            <i class="bi bi-display me-1"></i> {{ t('view_screen') }}
+                        </button>
+                        {% else %}
+                        <button class="btn btn-warning" disabled>
+                            <i class="bi bi-arrow-clockwise me-1"></i> {{ t('reboot') }}
+                        </button>
+                        
+                        <button class="btn btn-info" disabled>
+                            <i class="bi bi-display me-1"></i> {{ t('view_screen') }}
+                        </button>
+                        {% endif %}
+                        
+                        <form action="{{ url_for('delete_client', client_id=client.id) }}" method="post" class="d-inline"
+                              onsubmit="return confirm('{{ t('confirm_delete_client') }}');">
+                            <button type="submit" class="btn btn-danger">
+                                <i class="bi bi-trash me-1"></i> {{ t('delete') }}
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-6">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">{{ t('hardware_specs') }}</h5>
+                </div>
+                <div class="card-body">
+                    {% if hardware_specs %}
+                        <table class="table">
+                            {% if hardware_specs.os %}
+                            <tr>
+                                <th>{{ t('operating_system') }}</th>
+                                <td>{{ hardware_specs.os }}</td>
+                            </tr>
+                            {% endif %}
+                            
+                            {% if hardware_specs.cpu %}
+                            <tr>
+                                <th>{{ t('cpu') }}</th>
+                                <td>{{ hardware_specs.cpu }}</td>
+                            </tr>
+                            {% endif %}
+                            
+                            {% if hardware_specs.ram_gb %}
+                            <tr>
+                                <th>{{ t('memory') }}</th>
+                                <td>{{ hardware_specs.ram_gb }} GB</td>
+                            </tr>
+                            {% endif %}
+                            
+                            {% if hardware_specs.disk_gb %}
+                            <tr>
+                                <th>{{ t('disk_space') }}</th>
+                                <td>{{ hardware_specs.disk_gb }} GB</td>
+                            </tr>
+                            {% endif %}
+                            
+                            {% if hardware_specs.gpu %}
+                            <tr>
+                                <th>{{ t('graphics') }}</th>
+                                <td>{{ hardware_specs.gpu }}</td>
+                            </tr>
+                            {% endif %}
+                            
+                            {% if hardware_specs.resolution %}
+                            <tr>
+                                <th>{{ t('screen_resolution') }}</th>
+                                <td>{{ hardware_specs.resolution }}</td>
+                            </tr>
+                            {% endif %}
+                            
+                            {% if hardware_specs.network %}
+                            <tr>
+                                <th>{{ t('network_adapter') }}</th>
+                                <td>{{ hardware_specs.network }}</td>
+                            </tr>
+                            {% endif %}
+                            
+                            <!-- Add more hardware specs as needed -->
+                        </table>
+                    {% else %}
+                        <div class="alert alert-info">
+                            {{ t('no_hardware_info') }}
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">{{ t('performance_stats') }}</h5>
+                </div>
+                <div class="card-body">
+                    {% if stats %}
+                        <canvas id="performanceChart" height="200"></canvas>
+                    {% else %}
+                        <div class="alert alert-info">
+                            {{ t('no_performance_stats') }}
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Screen Viewer Modal -->
+<div class="modal fade" id="screenViewerModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">{{ t('remote_screen') }}: {{ client.name }}</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body text-center">
+                <div class="screen-container">
+                    <img id="remoteScreen" src="" alt="Remote screen" class="img-fluid border">
+                    <div id="screenLoader" class="text-center my-5">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                        <p class="mt-2">{{ t('connecting_to_client') }}...</p>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{{ t('close') }}</button>
+                <button type="button" class="btn btn-primary" id="refreshScreenButton">
+                    <i class="bi bi-arrow-repeat me-1"></i> {{ t('refresh') }}
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Client Modal -->
+<div class="modal fade" id="editClientModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">{{ t('edit_client') }}</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form action="{{ url_for('edit_client', client_id=client.id) }}" method="post">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="name" class="form-label">{{ t('name') }}</label>
+                        <input type="text" class="form-control" id="name" name="name" value="{{ client.name }}" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="mac_address" class="form-label">{{ t('mac_address') }}</label>
+                        <input type="text" class="form-control" id="mac_address" name="mac_address" value="{{ client.mac_address }}" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="vhd_id" class="form-label">{{ t('vhd_image') }}</label>
+                        <select class="form-select" id="vhd_id" name="vhd_id">
+                            <option value="">{{ t('none') }}</option>
+                            {% for vhd in vhds %}
+                            <option value="{{ vhd.id }}" {% if client.vhd_id == vhd.id %}selected{% endif %}>
+                                {{ vhd.name }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="boot_mode" class="form-label">{{ t('boot_mode') }}</label>
+                        <select class="form-select" id="boot_mode" name="boot_mode">
+                            <option value="UEFI" {% if client.boot_mode == 'UEFI' %}selected{% endif %}>UEFI</option>
+                            <option value="Legacy" {% if client.boot_mode == 'Legacy' %}selected{% endif %}>Legacy BIOS</option>
+                        </select>
+                    </div>
+                    <div class="mb-3 form-check">
+                        <input type="checkbox" class="form-check-input" id="is_persistent" name="is_persistent" {% if client.is_persistent %}checked{% endif %}>
+                        <label class="form-check-label" for="is_persistent">{{ t('persistent_mode') }}</label>
+                    </div>
+                    <div class="mb-3">
+                        <label for="post_boot_script" class="form-label">{{ t('post_boot_script') }}</label>
+                        <textarea class="form-control" id="post_boot_script" name="post_boot_script" rows="4">{{ client.post_boot_script or '' }}</textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{{ t('cancel') }}</button>
+                    <button type="submit" class="btn btn-primary">{{ t('save_changes') }}</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    // Initialize performance chart if stats exist
+    {% if stats %}
+    document.addEventListener('DOMContentLoaded', function() {
+        const ctx = document.getElementById('performanceChart').getContext('2d');
+        
+        // Extract timestamps and stats
+        const timestamps = [{% for stat in stats %}'{{ stat.timestamp.strftime("%H:%M") }}'{% if not loop.last %}, {% endif %}{% endfor %}].reverse();
+        const cpuData = [{% for stat in stats %}{{ stat.cpu_usage or 0 }}{% if not loop.last %}, {% endif %}{% endfor %}].reverse();
+        const memoryData = [{% for stat in stats %}{{ stat.memory_usage_mb or 0 }}{% if not loop.last %}, {% endif %}{% endfor %}].reverse();
+        const networkRxData = [{% for stat in stats %}{{ stat.network_rx_mbps or 0 }}{% if not loop.last %}, {% endif %}{% endfor %}].reverse();
+        const networkTxData = [{% for stat in stats %}{{ stat.network_tx_mbps or 0 }}{% if not loop.last %}, {% endif %}{% endfor %}].reverse();
+        
+        const chart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: timestamps,
+                datasets: [
+                    {
+                        label: '{{ t("cpu_usage") }} (%)',
+                        data: cpuData,
+                        borderColor: 'rgba(255, 99, 132, 1)',
+                        backgroundColor: 'rgba(255, 99, 132, 0.2)',
+                        tension: 0.4
+                    },
+                    {
+                        label: '{{ t("memory_usage") }} (MB)',
+                        data: memoryData,
+                        borderColor: 'rgba(54, 162, 235, 1)',
+                        backgroundColor: 'rgba(54, 162, 235, 0.2)',
+                        tension: 0.4
+                    },
+                    {
+                        label: '{{ t("network_download") }} (Mbps)',
+                        data: networkRxData,
+                        borderColor: 'rgba(75, 192, 192, 1)',
+                        backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                        tension: 0.4
+                    },
+                    {
+                        label: '{{ t("network_upload") }} (Mbps)',
+                        data: networkTxData,
+                        borderColor: 'rgba(153, 102, 255, 1)',
+                        backgroundColor: 'rgba(153, 102, 255, 0.2)',
+                        tension: 0.4
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    tooltip: {
+                        mode: 'index',
+                        intersect: false
+                    },
+                    legend: {
+                        position: 'top',
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true
+                    }
+                }
+            }
+        });
+    });
+    {% endif %}
+    
+    // Remote screen viewer logic
+    document.addEventListener('DOMContentLoaded', function() {
+        const viewScreenButton = document.getElementById('viewScreenButton');
+        const refreshScreenButton = document.getElementById('refreshScreenButton');
+        const remoteScreen = document.getElementById('remoteScreen');
+        const screenLoader = document.getElementById('screenLoader');
+        
+        if (viewScreenButton) {
+            viewScreenButton.addEventListener('click', function() {
+                const modal = new bootstrap.Modal(document.getElementById('screenViewerModal'));
+                modal.show();
+                fetchScreenshot();
+            });
+        }
+        
+        if (refreshScreenButton) {
+            refreshScreenButton.addEventListener('click', fetchScreenshot);
+        }
+        
+        function fetchScreenshot() {
+            // Show loading indicator
+            if (screenLoader) screenLoader.style.display = 'block';
+            if (remoteScreen) remoteScreen.style.display = 'none';
+            
+            // In a real implementation, we would fetch the screenshot from the client
+            // For demo purposes, we'll simulate a delay and then show a placeholder
+            setTimeout(function() {
+                // Hide loading indicator
+                if (screenLoader) screenLoader.style.display = 'none';
+                if (remoteScreen) {
+                    remoteScreen.style.display = 'block';
+                    
+                    // In a real implementation, we would set the src to the client's screenshot
+                    // For demo, we'll use a placeholder
+                    remoteScreen.src = '/static/img/remote_screen_placeholder.png';
+                    
+                    // In a real implementation, we would add an error handler
+                    remoteScreen.onerror = function() {
+                        remoteScreen.src = 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="400" height="300" viewBox="0 0 400 300"><rect width="400" height="300" fill="%23f8f9fa"/><text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" font-family="Arial" font-size="16" fill="%23495057">Unable to connect to client screen</text></svg>';
+                    };
+                }
+            }, 1500);
+        }
+    });
+</script>
+{% endblock %}

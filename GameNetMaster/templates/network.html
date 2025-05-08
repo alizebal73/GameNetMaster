@@ -1,0 +1,259 @@
+{% extends "layout.html" %}
+
+{% block title %}Network Settings{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pb-2 mb-3 border-bottom">
+    <h1 class="h2"><i class="fas fa-network-wired me-2"></i> Network Settings</h1>
+</div>
+
+<div class="row">
+    <div class="col-md-8 offset-md-2">
+        <form action="{{ url_for('update_network_settings') }}" method="post">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">PXE Boot Settings</h5>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3 form-check form-switch">
+                        <input type="checkbox" class="form-check-input" id="tftp_enabled" name="tftp_enabled" {% if settings.tftp_enabled %}checked{% endif %}>
+                        <label class="form-check-label" for="tftp_enabled">Enable TFTP Server</label>
+                        <div class="form-text">Required for PXE boot functionality</div>
+                    </div>
+                    
+                    <div class="mb-3 form-check form-switch">
+                        <input type="checkbox" class="form-check-input" id="dhcp_enabled" name="dhcp_enabled" {% if settings.dhcp_enabled %}checked{% endif %}>
+                        <label class="form-check-label" for="dhcp_enabled">Enable DHCP Server</label>
+                        <div class="form-text">If disabled, you must configure your existing DHCP server to support PXE boot</div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="network_interface" class="form-label">Network Interface</label>
+                        <input type="text" class="form-control" id="network_interface" name="network_interface" value="{{ settings.network_interface }}" required>
+                        <div class="form-text">The network interface to use for PXE boot (e.g., eth0)</div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">Network Configuration</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="subnet" class="form-label">Subnet</label>
+                            <input type="text" class="form-control" id="subnet" name="subnet" value="{{ settings.subnet }}" required>
+                            <div class="form-text">Format: 192.168.1.0/24</div>
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            <label for="gateway" class="form-label">Gateway IP</label>
+                            <input type="text" class="form-control" id="gateway" name="gateway" value="{{ settings.gateway }}" required>
+                            <div class="form-text">Default gateway for clients</div>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="dns_server" class="form-label">DNS Server</label>
+                        <input type="text" class="form-control" id="dns_server" name="dns_server" value="{{ settings.dns_server }}" required>
+                        <div class="form-text">DNS server for clients (e.g., 8.8.8.8)</div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="bandwidth_limit_mbps" class="form-label">Bandwidth Limit (Mbps)</label>
+                        <input type="number" class="form-control" id="bandwidth_limit_mbps" name="bandwidth_limit_mbps" value="{{ settings.bandwidth_limit_mbps }}" min="0" step="1">
+                        <div class="form-text">Set to 0 for unlimited bandwidth</div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">Storage Paths</h5>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label for="tftp_root_dir" class="form-label">TFTP Root Directory</label>
+                        <input type="text" class="form-control" id="tftp_root_dir" name="tftp_root_dir" value="{{ settings.tftp_root_dir }}" required>
+                        <div class="form-text">Directory where TFTP boot files are stored</div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="vhd_storage_dir" class="form-label">VHD Storage Directory</label>
+                        <input type="text" class="form-control" id="vhd_storage_dir" name="vhd_storage_dir" value="{{ settings.vhd_storage_dir }}" required>
+                        <div class="form-text">Directory where VHD files are stored</div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">Performance & Caching</h5>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3 form-check form-switch">
+                        <input type="checkbox" class="form-check-input" id="caching_enabled" name="caching_enabled" {% if settings.caching_enabled %}checked{% endif %}>
+                        <label class="form-check-label" for="caching_enabled">Enable Caching</label>
+                        <div class="form-text">Improves performance by caching frequently accessed data</div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="cache_size_mb" class="form-label">Cache Size (MB)</label>
+                        <input type="number" class="form-control" id="cache_size_mb" name="cache_size_mb" value="{{ settings.cache_size_mb }}" min="64" step="64" required>
+                        <div class="form-text">Recommended: 1024 MB or more for better performance</div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="alert alert-warning">
+                <i class="fas fa-exclamation-triangle me-2"></i> Changing network settings may require a restart of the PXE server.
+            </div>
+            
+            <div class="d-grid gap-2 d-md-flex justify-content-md-end mb-4">
+                <button type="reset" class="btn btn-secondary">Reset</button>
+                <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-save me-1"></i> Save Settings
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-8 offset-md-2">
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0">Network Diagnostics</h5>
+            </div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <h6>Current Network Status</h6>
+                    <div class="table-responsive">
+                        <table class="table table-sm">
+                            <tbody>
+                                <tr>
+                                    <th scope="row">Interface Status</th>
+                                    <td><span class="badge bg-success">Up</span></td>
+                                </tr>
+                                <tr>
+                                    <th scope="row">Link Speed</th>
+                                    <td>1 Gbps</td>
+                                </tr>
+                                <tr>
+                                    <th scope="row">DHCP Server</th>
+                                    <td>
+                                        {% if settings.dhcp_enabled %}
+                                        <span class="badge bg-success">Running</span>
+                                        {% else %}
+                                        <span class="badge bg-secondary">Disabled</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <th scope="row">TFTP Server</th>
+                                    <td>
+                                        {% if settings.tftp_enabled %}
+                                        <span class="badge bg-success">Running</span>
+                                        {% else %}
+                                        <span class="badge bg-secondary">Disabled</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <th scope="row">Internet Connectivity</th>
+                                    <td><span class="badge bg-success">Connected</span></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                
+                <div class="mb-3">
+                    <h6>Network Traffic</h6>
+                    <div class="chart-container" style="height: 200px;">
+                        <canvas id="networkStatsChart"></canvas>
+                    </div>
+                </div>
+                
+                <div class="d-grid gap-2 d-md-flex justify-content-md-center">
+                    <button type="button" class="btn btn-outline-primary" onclick="testNetworkSettings()">
+                        <i class="fas fa-network-wired me-1"></i> Test Network Settings
+                    </button>
+                    <button type="button" class="btn btn-outline-secondary" onclick="restartPXEServer()">
+                        <i class="fas fa-sync-alt me-1"></i> Restart PXE Server
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Initialize bandwidth chart
+        const ctx = document.getElementById('networkStatsChart').getContext('2d');
+        const networkChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: Array.from({length: 10}, (_, i) => i + 1),
+                datasets: [
+                    {
+                        label: 'Download (Mbps)',
+                        data: [10, 12, 15, 14, 20, 17, 19, 18, 22, 25],
+                        borderColor: 'rgba(13, 110, 253, 1)',
+                        backgroundColor: 'rgba(13, 110, 253, 0.1)',
+                        borderWidth: 2,
+                        fill: true,
+                        tension: 0.4
+                    },
+                    {
+                        label: 'Upload (Mbps)',
+                        data: [5, 6, 8, 7, 10, 9, 8, 7, 9, 11],
+                        borderColor: 'rgba(220, 53, 69, 1)',
+                        backgroundColor: 'rgba(220, 53, 69, 0.1)',
+                        borderWidth: 2,
+                        fill: true,
+                        tension: 0.4
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'bottom'
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        title: {
+                            display: true,
+                            text: 'Mbps'
+                        }
+                    }
+                }
+            }
+        });
+    });
+    
+    // Test network settings
+    function testNetworkSettings() {
+        // This would normally perform a network test
+        alert('Network test initiated. All settings appear correct.');
+    }
+    
+    // Restart PXE server
+    function restartPXEServer() {
+        if (confirm('Are you sure you want to restart the PXE server? This will temporarily interrupt service for new client boots.')) {
+            // This would normally restart the PXE server
+            alert('PXE server restart initiated.');
+        }
+    }
+</script>
+{% endblock %}

@@ -1,0 +1,259 @@
+/* Custom styles for GameNetMaster */
+
+/* Dashboard styles */
+.dashboard-stats .card {
+    transition: transform 0.2s;
+    border: none;
+}
+
+.dashboard-stats .card:hover {
+    transform: translateY(-5px);
+}
+
+.dashboard-stats .card .icon {
+    font-size: 2rem;
+    opacity: 0.8;
+}
+
+/* Sidebar styles */
+.sidebar {
+    min-height: 100vh;
+    box-shadow: inset -1px 0 0 rgba(0, 0, 0, .1);
+}
+
+.sidebar .nav-link {
+    color: #adb5bd;
+    padding: 0.75rem 1rem;
+    margin: 0.2rem 0;
+    border-radius: 0.25rem;
+    transition: all 0.2s;
+}
+
+.sidebar .nav-link:hover {
+    color: #fff;
+    background-color: rgba(255, 255, 255, 0.05);
+}
+
+.sidebar .nav-link.active {
+    color: #fff;
+    background-color: rgba(255, 255, 255, 0.1);
+}
+
+.sidebar .nav-link i {
+    margin-right: 0.5rem;
+    width: 20px;
+    text-align: center;
+}
+
+/* Client cards */
+.client-card {
+    transition: all 0.2s;
+    border: none;
+}
+
+.client-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+}
+
+.client-status {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    display: inline-block;
+    margin-right: 5px;
+}
+
+.status-online {
+    background-color: #2ecc71;
+}
+
+.status-offline {
+    background-color: #e74c3c;
+}
+
+/* VHD Management */
+.vhd-card {
+    transition: all 0.2s;
+    border: none;
+}
+
+.vhd-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+}
+
+.vhd-size {
+    font-size: 1.5rem;
+    font-weight: bold;
+}
+
+.vhd-template-badge {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+}
+
+/* Form Styling */
+.form-control:focus {
+    box-shadow: 0 0 0 0.2rem rgba(52, 152, 219, 0.25);
+}
+
+/* Login Page */
+.login-container {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+}
+
+.login-form {
+    width: 100%;
+    max-width: 420px;
+    padding: 25px;
+    border-radius: 8px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+}
+
+/* Animation for cards */
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.fade-in {
+    animation: fadeIn 0.4s ease-out forwards;
+}
+
+/* Chart containers */
+.chart-container {
+    position: relative;
+    min-height: 250px;
+}
+
+/* Network usage indicator */
+.network-usage-bar {
+    height: 5px;
+    background-color: #f1f1f1;
+    border-radius: 2.5px;
+    overflow: hidden;
+    margin-top: 5px;
+}
+
+.network-usage-fill {
+    height: 100%;
+    background-color: #3498db;
+    border-radius: 2.5px;
+}
+
+/* Network settings specific */
+.network-interface-item {
+    border-left: 3px solid transparent;
+    transition: all 0.2s;
+}
+
+.network-interface-item:hover {
+    border-left-color: #3498db;
+    background-color: rgba(52, 152, 219, 0.05);
+}
+
+.network-interface-item.active {
+    border-left-color: #3498db;
+    background-color: rgba(52, 152, 219, 0.1);
+}
+
+/* Utility classes */
+.cursor-pointer {
+    cursor: pointer;
+}
+
+.transition {
+    transition: all 0.2s;
+}
+
+/* Client detail modal */
+.client-detail-header {
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    padding-bottom: 10px;
+    margin-bottom: 20px;
+}
+
+.client-detail-stats {
+    margin: 15px 0;
+}
+
+.stat-card {
+    padding: 10px;
+    border-radius: 5px;
+    background-color: rgba(255, 255, 255, 0.05);
+    margin-bottom: 10px;
+}
+
+.stat-value {
+    font-size: 1.5rem;
+    font-weight: bold;
+}
+
+/* Custom buttons */
+.btn-action {
+    padding: 0.25rem 0.5rem;
+    margin: 0 0.1rem;
+}
+
+/* Adjustments for RTL layouts */
+[dir="rtl"] .sidebar .nav-link i {
+    margin-right: 0;
+    margin-left: 0.5rem;
+}
+
+/* Dark theme specific adjustments */
+[data-bs-theme="dark"] .card {
+    background-color: #1e1e1e;
+}
+
+[data-bs-theme="dark"] .modal-content {
+    background-color: #1e1e1e;
+}
+
+[data-bs-theme="dark"] .form-control {
+    background-color: #252525;
+    border-color: #333;
+    color: #fff;
+}
+
+[data-bs-theme="dark"] .form-control:focus {
+    background-color: #2a2a2a;
+}
+
+[data-bs-theme="dark"] .input-group-text {
+    background-color: #333;
+    border-color: #333;
+}
+
+/* Responsive adjustments */
+@media (max-width: 767.98px) {
+    .sidebar {
+        position: fixed;
+        top: 0;
+        bottom: 0;
+        z-index: 100;
+        padding: 0;
+        box-shadow: none;
+    }
+    
+    .sidebar .nav-link {
+        padding: 1rem;
+    }
+}
+
+/* Animation for loading states */
+@keyframes pulse {
+    0% { opacity: 0.6; }
+    50% { opacity: 1; }
+    100% { opacity: 0.6; }
+}
+
+.loading {
+    animation: pulse 1.5s infinite ease-in-out;
+}

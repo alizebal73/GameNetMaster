@@ -1,0 +1,151 @@
+{% extends "layout.html" %}
+
+{% block title %}{{ translate('billing_settings') }}{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pb-2 mb-3 border-bottom">
+    <h1 class="h2"><i class="fas fa-cog me-2"></i> {{ translate('billing_settings') }}</h1>
+    <div class="btn-toolbar mb-2 mb-md-0">
+        <div class="btn-group me-2">
+            <a href="{{ url_for('billing_dashboard') }}" class="btn btn-sm btn-outline-secondary">
+                <i class="fas fa-arrow-left me-1"></i> {{ translate('back_to_dashboard') }}
+            </a>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-8">
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0">{{ translate('general_settings') }}</h5>
+            </div>
+            <div class="card-body">
+                <form action="{{ url_for('update_billing_settings') }}" method="post">
+                    <div class="mb-3">
+                        <label for="defaultRate" class="form-label">{{ translate('default_rate') }}</label>
+                        <select class="form-select" id="defaultRate" name="default_rate_id">
+                            <option value="">{{ translate('select_default_rate') }}</option>
+                            {% for rate in rates %}
+                            <option value="{{ rate.id }}" {% if settings.default_rate_id == rate.id %}selected{% endif %}>
+                                {{ rate.name }} - {{ "%.2f"|format(rate.hourly_rate) }}/{{ translate('hour') }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                        <div class="form-text">{{ translate('default_rate_help') }}</div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="currencySymbol" class="form-label">{{ translate('currency_symbol') }}</label>
+                        <input type="text" class="form-control" id="currencySymbol" name="currency_symbol" 
+                               value="{{ settings.currency_symbol }}" maxlength="5">
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="taxPercentage" class="form-label">{{ translate('tax_percentage') }}</label>
+                        <div class="input-group">
+                            <input type="number" class="form-control" id="taxPercentage" name="tax_percentage" 
+                                   value="{{ settings.tax_percentage }}" min="0" step="0.01">
+                            <span class="input-group-text">%</span>
+                        </div>
+                        <div class="form-text">{{ translate('tax_percentage_help') }}</div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="paymentMethods" class="form-label">{{ translate('payment_methods') }}</label>
+                        <input type="text" class="form-control" id="paymentMethods" name="payment_methods" 
+                               value="{{ settings.payment_methods }}">
+                        <div class="form-text">{{ translate('payment_methods_help') }}</div>
+                    </div>
+                    
+                    <div class="mb-3 form-check">
+                        <input type="checkbox" class="form-check-input" id="enableAutomaticBilling" 
+                               name="enable_automatic_billing" {% if settings.enable_automatic_billing %}checked{% endif %}>
+                        <label class="form-check-label" for="enableAutomaticBilling">
+                            {{ translate('enable_automatic_billing') }}
+                        </label>
+                        <div class="form-text">{{ translate('automatic_billing_help') }}</div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="receiptHeader" class="form-label">{{ translate('receipt_header') }}</label>
+                        <textarea class="form-control" id="receiptHeader" name="receipt_header" 
+                                  rows="2">{{ settings.receipt_header or '' }}</textarea>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="receiptFooter" class="form-label">{{ translate('receipt_footer') }}</label>
+                        <textarea class="form-control" id="receiptFooter" name="receipt_footer" 
+                                  rows="2">{{ settings.receipt_footer or '' }}</textarea>
+                    </div>
+                    
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save me-1"></i> {{ translate('save_settings') }}
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4">
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0">{{ translate('billing_overview') }}</h5>
+            </div>
+            <div class="card-body">
+                <p><strong>{{ translate('default_rate') }}:</strong> 
+                    {% if settings.default_rate %}
+                    {{ settings.default_rate.name }}
+                    {% else %}
+                    {{ translate('none_selected') }}
+                    {% endif %}
+                </p>
+                
+                <p><strong>{{ translate('currency') }}:</strong> {{ settings.currency_symbol }}</p>
+                
+                <p><strong>{{ translate('tax_rate') }}:</strong> {{ settings.tax_percentage }}%</p>
+                
+                <p><strong>{{ translate('automatic_billing') }}:</strong> 
+                    {% if settings.enable_automatic_billing %}
+                    <span class="badge bg-success">{{ translate('enabled') }}</span>
+                    {% else %}
+                    <span class="badge bg-secondary">{{ translate('disabled') }}</span>
+                    {% endif %}
+                </p>
+                
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle me-2"></i>
+                    {{ translate('billing_settings_info') }}
+                </div>
+            </div>
+        </div>
+        
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0">{{ translate('rates_overview') }}</h5>
+            </div>
+            <div class="card-body">
+                <div class="list-group">
+                    {% for rate in rates %}
+                    <div class="list-group-item">
+                        <div class="d-flex w-100 justify-content-between">
+                            <h6 class="mb-1">{{ rate.name }}</h6>
+                            <small>{{ "%.2f"|format(rate.hourly_rate) }}/{{ translate('hour') }}</small>
+                        </div>
+                        {% if rate.is_default %}
+                        <span class="badge bg-success">{{ translate('default') }}</span>
+                        {% endif %}
+                        <small>{{ translate('minimum') }}: {{ rate.minimum_minutes }} {{ translate('minutes') }}</small>
+                    </div>
+                    {% endfor %}
+                </div>
+                <div class="mt-3">
+                    <a href="{{ url_for('manage_rates') }}" class="btn btn-sm btn-outline-primary">
+                        <i class="fas fa-tags me-1"></i> {{ translate('manage_rates') }}
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

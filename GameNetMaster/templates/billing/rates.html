@@ -1,0 +1,225 @@
+{% extends "layout.html" %}
+
+{% block title %}{{ translate('manage_rates') }}{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pb-2 mb-3 border-bottom">
+    <h1 class="h2"><i class="fas fa-tags me-2"></i> {{ translate('manage_rates') }}</h1>
+    <div class="btn-toolbar mb-2 mb-md-0">
+        <div class="btn-group me-2">
+            <button type="button" class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#addRateModal">
+                <i class="fas fa-plus me-1"></i> {{ translate('add_rate') }}
+            </button>
+            <a href="{{ url_for('billing_dashboard') }}" class="btn btn-sm btn-outline-secondary">
+                <i class="fas fa-arrow-left me-1"></i> {{ translate('back_to_dashboard') }}
+            </a>
+        </div>
+    </div>
+</div>
+
+<!-- Rates Table -->
+<div class="card mb-4">
+    <div class="card-header">
+        <h5 class="mb-0">{{ translate('rates') }}</h5>
+    </div>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead>
+                    <tr>
+                        <th>{{ translate('name') }}</th>
+                        <th>{{ translate('description') }}</th>
+                        <th>{{ translate('hourly_rate') }}</th>
+                        <th>{{ translate('minimum_time') }}</th>
+                        <th>{{ translate('default') }}</th>
+                        <th>{{ translate('actions') }}</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% if rates %}
+                        {% for rate in rates %}
+                        <tr>
+                            <td>{{ rate.name }}</td>
+                            <td>{{ rate.description or '-' }}</td>
+                            <td>{{ "%.2f"|format(rate.hourly_rate) }}/{{ translate('hour') }}</td>
+                            <td>{{ rate.minimum_minutes }} {{ translate('minutes') }}</td>
+                            <td>
+                                {% if rate.is_default %}
+                                <span class="badge bg-success">{{ translate('default') }}</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <button type="button" class="btn btn-sm btn-outline-primary" 
+                                        data-bs-toggle="modal" data-bs-target="#editRateModal{{ rate.id }}">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                                {% if not rate.is_default %}
+                                <button type="button" class="btn btn-sm btn-outline-danger" 
+                                        onclick="confirmDeleteRate({{ rate.id }}, '{{ rate.name }}')">
+                                    <i class="fas fa-trash-alt"></i>
+                                </button>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        
+                        <!-- Edit Rate Modal -->
+                        <div class="modal fade" id="editRateModal{{ rate.id }}" tabindex="-1" 
+                             aria-labelledby="editRateModalLabel{{ rate.id }}" aria-hidden="true">
+                            <div class="modal-dialog">
+                                <div class="modal-content">
+                                    <div class="modal-header">
+                                        <h5 class="modal-title" id="editRateModalLabel{{ rate.id }}">
+                                            {{ translate('edit_rate') }}: {{ rate.name }}
+                                        </h5>
+                                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                    </div>
+                                    <form action="{{ url_for('edit_rate', rate_id=rate.id) }}" method="post">
+                                        <div class="modal-body">
+                                            <div class="mb-3">
+                                                <label for="name{{ rate.id }}" class="form-label">{{ translate('name') }} *</label>
+                                                <input type="text" class="form-control" id="name{{ rate.id }}" 
+                                                       name="name" value="{{ rate.name }}" required>
+                                            </div>
+                                            <div class="mb-3">
+                                                <label for="description{{ rate.id }}" class="form-label">{{ translate('description') }}</label>
+                                                <textarea class="form-control" id="description{{ rate.id }}" 
+                                                          name="description" rows="2">{{ rate.description or '' }}</textarea>
+                                            </div>
+                                            <div class="mb-3">
+                                                <label for="hourlyRate{{ rate.id }}" class="form-label">
+                                                    {{ translate('hourly_rate') }} *
+                                                </label>
+                                                <div class="input-group">
+                                                    <span class="input-group-text">$</span>
+                                                    <input type="number" class="form-control" id="hourlyRate{{ rate.id }}" 
+                                                           name="hourly_rate" value="{{ rate.hourly_rate }}" 
+                                                           min="0.01" step="0.01" required>
+                                                    <span class="input-group-text">{{ translate('per_hour') }}</span>
+                                                </div>
+                                            </div>
+                                            <div class="mb-3">
+                                                <label for="minimumMinutes{{ rate.id }}" class="form-label">
+                                                    {{ translate('minimum_billing_time') }}
+                                                </label>
+                                                <div class="input-group">
+                                                    <input type="number" class="form-control" id="minimumMinutes{{ rate.id }}" 
+                                                           name="minimum_minutes" value="{{ rate.minimum_minutes }}" 
+                                                           min="1" step="1">
+                                                    <span class="input-group-text">{{ translate('minutes') }}</span>
+                                                </div>
+                                            </div>
+                                            <div class="mb-3 form-check">
+                                                <input type="checkbox" class="form-check-input" id="isDefault{{ rate.id }}" 
+                                                       name="is_default" {% if rate.is_default %}checked{% endif %}>
+                                                <label class="form-check-label" for="isDefault{{ rate.id }}">
+                                                    {{ translate('set_as_default') }}
+                                                </label>
+                                            </div>
+                                        </div>
+                                        <div class="modal-footer">
+                                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                                                {{ translate('cancel') }}
+                                            </button>
+                                            <button type="submit" class="btn btn-primary">
+                                                {{ translate('save_changes') }}
+                                            </button>
+                                        </div>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <tr>
+                            <td colspan="6" class="text-center py-4">{{ translate('no_rates_found') }}</td>
+                        </tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Add Rate Modal -->
+<div class="modal fade" id="addRateModal" tabindex="-1" aria-labelledby="addRateModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="addRateModalLabel">{{ translate('add_new_rate') }}</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form action="{{ url_for('add_rate') }}" method="post">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="name" class="form-label">{{ translate('name') }} *</label>
+                        <input type="text" class="form-control" id="name" name="name" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="description" class="form-label">{{ translate('description') }}</label>
+                        <textarea class="form-control" id="description" name="description" rows="2"></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label for="hourlyRate" class="form-label">{{ translate('hourly_rate') }} *</label>
+                        <div class="input-group">
+                            <span class="input-group-text">$</span>
+                            <input type="number" class="form-control" id="hourlyRate" name="hourly_rate" 
+                                   value="5.00" min="0.01" step="0.01" required>
+                            <span class="input-group-text">{{ translate('per_hour') }}</span>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="minimumMinutes" class="form-label">{{ translate('minimum_billing_time') }}</label>
+                        <div class="input-group">
+                            <input type="number" class="form-control" id="minimumMinutes" name="minimum_minutes" 
+                                   value="15" min="1" step="1">
+                            <span class="input-group-text">{{ translate('minutes') }}</span>
+                        </div>
+                    </div>
+                    <div class="mb-3 form-check">
+                        <input type="checkbox" class="form-check-input" id="isDefault" name="is_default">
+                        <label class="form-check-label" for="isDefault">{{ translate('set_as_default') }}</label>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{{ translate('cancel') }}</button>
+                    <button type="submit" class="btn btn-primary">{{ translate('add_rate') }}</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Delete Rate Confirmation Modal -->
+<div class="modal fade" id="deleteRateModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">{{ translate('confirm_delete') }}</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>{{ translate('confirm_delete_rate') }} <strong id="rateNameToDelete"></strong>?</p>
+                <p>{{ translate('this_action_cannot_be_undone') }}</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{{ translate('cancel') }}</button>
+                <form id="deleteRateForm" action="" method="post">
+                    <button type="submit" class="btn btn-danger">{{ translate('delete') }}</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    function confirmDeleteRate(rateId, rateName) {
+        document.getElementById('rateNameToDelete').textContent = rateName;
+        document.getElementById('deleteRateForm').action = "{{ url_for('delete_rate', rate_id=0) }}".replace('0', rateId);
+        
+        var deleteModal = new bootstrap.Modal(document.getElementById('deleteRateModal'));
+        deleteModal.show();
+    }
+</script>
+{% endblock %}

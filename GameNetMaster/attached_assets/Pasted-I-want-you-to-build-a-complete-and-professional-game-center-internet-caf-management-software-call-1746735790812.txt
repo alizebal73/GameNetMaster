@@ -1,0 +1,49 @@
+I want you to build a complete and professional game center (internet café) management software called **GameNetMaster**. This system must include all server and client-side features similar to CCBoot, optimized for performance, stability, and scalability (up to 50+ clients). The stack should be modern and cleanly separated into modules.
+
+### 🖥️ Server Requirements:
+- A server-side application (preferably in Python with Flask/FastAPI backend)
+- Hosts `.vhd` images for clients to boot via PXE (VHD boot system like CCBoot)
+- PXE and DHCP server integration to boot diskless clients
+- Diskless boot using VHD files stored on the server (read-only for clients)
+- Ability to clone, update and manage VHDs easily
+- Central Windows/software update deployment (update once on the image)
+- Advanced caching (like SuperCache) to reduce server disk I/O
+
+### 💻 Client Agent:
+- A lightweight agent installed on client OS (Windows) after boot
+- Handles game execution, app control, automatic login (auto-login to Windows or iCafe8), and session tracking
+- Can run scripts after boot (for antivirus, iCafe8, etc.)
+- Communicates securely with the server (token or local SSL)
+
+### 🌐 Admin Control Panel (Web-based):
+- Dashboard with status of all clients (on/off, session time, current game)
+- Ability to remotely start/shutdown/restart clients
+- Monitor bandwidth per client
+- Session logging (start time, user, game played, bandwidth used)
+- Assign specific games/apps to users or client machines
+- Add/Edit/Delete VHDs
+- Set client time limits or usage policies
+- Manual or automatic Windows updates
+- User permissions and multi-admin support
+- Built with React (or clean web frontend with Python Flask if simpler)
+
+### 🛠️ Additional Features:
+- Bandwidth and internet usage monitoring
+- Smart caching system to optimize game/file loading
+- Game launcher integration with auto-mount paths
+- Script execution after client boot (custom tasks)
+- Support for Windows Server 2022
+- Scalable design for large networks (20+ clients)
+- Secure communication channel between server and clients
+- All config files should be editable and stored in structured format (like `config.ini`, `settings.json`)
+
+### 💽 Technologies Suggested:
+- Python (backend)
+- Flask or FastAPI (API)
+- React or Flask templates (frontend)
+- SQLite or PostgreSQL (DB)
+- PXELINUX or iPXE for network boot
+- Windows VHD (Virtual Hard Disk) for client OS
+- Windows Server 2022 (for deployment)
+
+Please begin by generating the project folder structure and creating the core backend (boot server, client manager module, and web dashboard starter). Include clear modular separation and comments. Then move on to the PXE+VHD boot system and client control features.

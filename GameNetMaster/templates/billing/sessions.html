@@ -1,0 +1,243 @@
+{% extends "layout.html" %}
+
+{% block title %}{{ translate('manage_sessions') }}{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pb-2 mb-3 border-bottom">
+    <h1 class="h2"><i class="fas fa-clock me-2"></i> {{ translate('manage_sessions') }}</h1>
+    <div class="btn-toolbar mb-2 mb-md-0">
+        <div class="btn-group me-2">
+            <button type="button" class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#startSessionModal">
+                <i class="fas fa-play me-1"></i> {{ translate('start_session') }}
+            </button>
+            <a href="{{ url_for('billing_dashboard') }}" class="btn btn-sm btn-outline-secondary">
+                <i class="fas fa-arrow-left me-1"></i> {{ translate('back_to_dashboard') }}
+            </a>
+        </div>
+    </div>
+</div>
+
+<!-- Filter Card -->
+<div class="card mb-4">
+    <div class="card-header">
+        <h5 class="mb-0">{{ translate('filter_sessions') }}</h5>
+    </div>
+    <div class="card-body">
+        <form action="{{ url_for('manage_sessions') }}" method="get" class="row g-3">
+            <div class="col-md-3">
+                <label for="status" class="form-label">{{ translate('status') }}</label>
+                <select class="form-select" id="status" name="status">
+                    <option value="all" {% if status == 'all' %}selected{% endif %}>{{ translate('all_sessions') }}</option>
+                    <option value="active" {% if status == 'active' %}selected{% endif %}>{{ translate('active_only') }}</option>
+                    <option value="closed" {% if status == 'closed' %}selected{% endif %}>{{ translate('closed_only') }}</option>
+                    <option value="pending" {% if status == 'pending' %}selected{% endif %}>{{ translate('payment_pending') }}</option>
+                    <option value="paid" {% if status == 'paid' %}selected{% endif %}>{{ translate('paid_only') }}</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label for="clientId" class="form-label">{{ translate('client') }}</label>
+                <select class="form-select" id="clientId" name="client_id">
+                    <option value="">{{ translate('all_clients') }}</option>
+                    {% for client in clients %}
+                    <option value="{{ client.id }}" {% if client_id|int == client.id %}selected{% endif %}>
+                        {{ client.name }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label for="dateFrom" class="form-label">{{ translate('from_date') }}</label>
+                <input type="date" class="form-control" id="dateFrom" name="date_from" 
+                       value="{{ date_from.strftime('%Y-%m-%d') if date_from }}">
+            </div>
+            <div class="col-md-3">
+                <label for="dateTo" class="form-label">{{ translate('to_date') }}</label>
+                <input type="date" class="form-control" id="dateTo" name="date_to" 
+                       value="{{ date_to.strftime('%Y-%m-%d') if date_to }}">
+            </div>
+            <div class="col-12">
+                <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-filter me-1"></i> {{ translate('apply_filter') }}
+                </button>
+                <a href="{{ url_for('manage_sessions') }}" class="btn btn-outline-secondary">
+                    <i class="fas fa-undo me-1"></i> {{ translate('clear_filter') }}
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Sessions Table -->
+<div class="card mb-4">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h5 class="mb-0">{{ translate('sessions') }}</h5>
+        <button type="button" class="btn btn-sm btn-outline-primary" onclick="window.print()">
+            <i class="fas fa-print me-1"></i> {{ translate('print') }}
+        </button>
+    </div>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead>
+                    <tr>
+                        <th>{{ translate('id') }}</th>
+                        <th>{{ translate('client') }}</th>
+                        <th>{{ translate('user') }}</th>
+                        <th>{{ translate('start_time') }}</th>
+                        <th>{{ translate('end_time') }}</th>
+                        <th>{{ translate('duration') }}</th>
+                        <th>{{ translate('amount') }}</th>
+                        <th>{{ translate('status') }}</th>
+                        <th>{{ translate('actions') }}</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% if sessions %}
+                        {% for session in sessions %}
+                        <tr>
+                            <td>{{ session.id }}</td>
+                            <td>{{ session.client.name }}</td>
+                            <td>{{ session.user_name or '-' }}</td>
+                            <td>{{ session.start_time.strftime('%Y-%m-%d %H:%M') }}</td>
+                            <td>
+                                {% if session.end_time %}
+                                    {{ session.end_time.strftime('%Y-%m-%d %H:%M') }}
+                                {% else %}
+                                    -
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if session.duration_minutes %}
+                                    {{ session.duration_minutes }} {{ translate('minutes') }}
+                                {% elif session.is_active %}
+                                    <span class="badge bg-success">{{ translate('active') }}</span>
+                                {% else %}
+                                    -
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if session.billed_amount %}
+                                    ${{ "%.2f"|format(session.billed_amount) }}
+                                {% else %}
+                                    -
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if session.is_active %}
+                                    <span class="badge bg-success">{{ translate('active') }}</span>
+                                {% else %}
+                                    {% if session.payment_status == 'Paid' %}
+                                        <span class="badge bg-success">{{ translate('paid') }}</span>
+                                    {% elif session.payment_status == 'Waived' %}
+                                        <span class="badge bg-info">{{ translate('waived') }}</span>
+                                    {% else %}
+                                        <span class="badge bg-warning">{{ translate('pending') }}</span>
+                                    {% endif %}
+                                {% endif %}
+                            </td>
+                            <td>
+                                <div class="btn-group">
+                                    <a href="{{ url_for('view_session', session_id=session.id) }}" class="btn btn-sm btn-outline-primary" title="{{ translate('view_details') }}">
+                                        <i class="fas fa-eye"></i>
+                                    </a>
+                                    {% if session.is_active %}
+                                    <button type="button" class="btn btn-sm btn-outline-warning" 
+                                            onclick="confirmEndSession({{ session.id }}, '{{ session.client.name }}')" title="{{ translate('end_session') }}">
+                                        <i class="fas fa-stop"></i>
+                                    </button>
+                                    {% endif %}
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    {% else %}
+                        <tr>
+                            <td colspan="9" class="text-center py-4">{{ translate('no_sessions_found') }}</td>
+                        </tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Start Session Modal -->
+<div class="modal fade" id="startSessionModal" tabindex="-1" aria-labelledby="startSessionModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="startSessionModalLabel">{{ translate('start_new_session') }}</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form action="{{ url_for('start_session') }}" method="post">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="clientSelect" class="form-label">{{ translate('select_client') }} *</label>
+                        <select class="form-select" id="clientSelect" name="client_id" required>
+                            <option value="">{{ translate('select_client') }}...</option>
+                            {% for client in clients %}
+                            <option value="{{ client.id }}">{{ client.name }} ({{ client.ip_address or client.mac_address }})</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="userName" class="form-label">{{ translate('user_name') }}</label>
+                        <input type="text" class="form-control" id="userName" name="user_name" placeholder="{{ translate('optional') }}">
+                        <div class="form-text">{{ translate('user_name_help') }}</div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="rateSelect" class="form-label">{{ translate('select_rate') }}</label>
+                        <select class="form-select" id="rateSelect" name="rate_id">
+                            <option value="">{{ translate('use_default_rate') }}</option>
+                            {% for rate in rates %}
+                            <option value="{{ rate.id }}">{{ rate.name }} - ${{ "%.2f"|format(rate.hourly_rate) }}/{{ translate('hour') }}</option>
+                            {% endfor %}
+                        </select>
+                        <div class="form-text">{{ translate('rate_selection_help') }}</div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{{ translate('cancel') }}</button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-play me-1"></i> {{ translate('start_session') }}
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- End Session Confirmation Modal -->
+<div class="modal fade" id="endSessionModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">{{ translate('confirm_end_session') }}</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>{{ translate('confirm_end_session_for') }} <strong id="clientNameToEndSession"></strong>?</p>
+                <p>{{ translate('end_session_explanation') }}</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{{ translate('cancel') }}</button>
+                <form id="endSessionForm" action="" method="post">
+                    <button type="submit" class="btn btn-warning">{{ translate('end_session') }}</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    function confirmEndSession(sessionId, clientName) {
+        document.getElementById('clientNameToEndSession').textContent = clientName;
+        document.getElementById('endSessionForm').action = "{{ url_for('end_session', session_id=0) }}".replace('0', sessionId);
+        
+        var endModal = new bootstrap.Modal(document.getElementById('endSessionModal'));
+        endModal.show();
+    }
+</script>
+{% endblock %}
