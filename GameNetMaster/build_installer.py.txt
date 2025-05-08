@@ -1,0 +1,25 @@
+import os
+import subprocess
+
+# مسیر فایل اصلی برنامه
+MAIN_PY_FILE = "main.py"
+
+# فایل‌های اضافی مورد نیاز
+ADDITIONAL_FILES = ["icon.svg"]
+
+# وابستگی‌های مورد نیاز
+DEPENDENCIES = ["pygame"]
+
+# نام فایل نصب‌کننده
+INSTALLER_NAME = "GameNetMaster_Setup_1.0.0.exe"
+
+# اجرای Inno Setup
+def build_installer():
+    # نصب وابستگی‌ها
+    subprocess.run(["pip", "install"] + DEPENDENCIES)
+
+    # اجرای اسکریپت Inno Setup
+    subprocess.run(["iscc", "inno_setup_script.iss"])
+
+if __name__ == "__main__":
+    build_installer()

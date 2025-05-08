@@ -1,0 +1,15 @@
+[Setup]
+AppName=GameNetMaster
+AppVersion=1.0.0
+DefaultDirName={pf}\GameNetMaster
+DefaultGroupName=GameNetMaster
+OutputBaseFilename=GameNetMaster_Setup_1.0.0
+Compression=lzma
+SolidCompression=yes
+
+[Files]
+Source: "main.py"; DestDir: "{app}"; Flags: ignoreversion
+Source: "icon.svg"; DestDir: "{app}"; Flags: ignoreversion
+
+[Icons]
+Name: "{group}\GameNetMaster"; Filename: "{app}\main.py"; WorkingDir: "{app}"
